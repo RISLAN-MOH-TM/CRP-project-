@@ -88,6 +88,44 @@ And both `kali_server.py` and `mcp_server.py` have the same default key.
 
 ---
 
+## ❌ Issue: "externally-managed-environment" error
+
+### Problem:
+Kali Linux (2023+) prevents pip3 from installing packages system-wide.
+
+### Error Message:
+```
+error: externally-managed-environment
+× This environment is externally managed
+```
+
+### Solution 1: Use apt (Recommended)
+```bash
+# Install Python packages using apt
+sudo apt update
+sudo apt install python3-flask python3-requests
+```
+
+### Solution 2: Virtual Environment
+```bash
+# Create virtual environment
+python3 -m venv ~/kali-mcp-env
+source ~/kali-mcp-env/bin/activate
+
+# Install packages
+pip3 install flask requests
+
+# Run server
+python3 kali_server.py --ip 0.0.0.0 --port 5000
+```
+
+### Solution 3: Override (Not Recommended)
+```bash
+pip3 install flask requests --break-system-packages
+```
+
+---
+
 ## ❌ Issue: "Module not found: flask"
 
 ### Solution:

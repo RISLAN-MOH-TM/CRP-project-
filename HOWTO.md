@@ -10,9 +10,17 @@
 ## Step 1: On Kali Linux VM
 
 ```bash
-# Install packages
-pip3 install flask requests
-sudo apt install -y nmap ffuf sqlmap nikto
+# Install Python packages using apt (Kali's package manager)
+sudo apt update
+sudo apt install -y python3-flask python3-requests
+
+# Install penetration testing tools
+sudo apt install -y nmap gobuster feroxbuster nikto sqlmap \
+                    metasploit-framework hydra john wpscan \
+                    ffuf amass hashcat
+
+# Install enum4linux-ng (not in apt repository)
+pip3 install enum4linux-ng --break-system-packages
 
 # Start server (allow connections from Windows)
 python3 kali_server.py --ip 0.0.0.0 --port 5000

@@ -14,8 +14,16 @@ AI-powered penetration testing using Claude AI + Kali Linux + MCP Protocol
 
 1. **Install dependencies:**
 ```bash
-pip3 install flask requests
-sudo apt install -y nmap ffuf sqlmap nikto
+# Use apt for Python packages (Kali requirement)
+sudo apt update
+sudo apt install -y python3-flask python3-requests
+
+# Install penetration testing tools
+sudo apt install -y nmap ffuf sqlmap nikto gobuster feroxbuster \
+                    metasploit-framework hydra john wpscan amass hashcat
+
+# Install enum4linux-ng
+pip3 install enum4linux-ng --break-system-packages
 ```
 
 2. **Start server:**

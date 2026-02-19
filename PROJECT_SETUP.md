@@ -40,15 +40,19 @@
 # Update system
 sudo apt update
 
-# Install Python packages
-pip3 install flask requests
+# Install Python packages (use apt for Kali Linux)
+sudo apt install -y python3-flask python3-requests
 
 # Install penetration testing tools
 sudo apt install -y nmap gobuster feroxbuster nikto sqlmap \
                     metasploit-framework hydra john wpscan \
                     ffuf amass hashcat
-pip3 install enum4linux-ng
+
+# Install enum4linux-ng (not in apt, use pip)
+pip3 install enum4linux-ng --break-system-packages
 ```
+
+**Note:** Kali Linux now requires using `apt` for Python packages instead of `pip3` for system stability.
 
 #### Step 2: Copy kali_server.py to Kali VM
 Transfer `kali_server.py` to your Kali VM (use shared folder or SCP).
