@@ -1,0 +1,10 @@
+# Core dependencies
+flask>=2.3.0
+requests>=2.31.0
+
+# MCP Server
+# Note: Install mcp from the official source
+# pip install mcp
+
+# Optional but recommended
+python-dotenv>=1.0.0  # For .env file support
