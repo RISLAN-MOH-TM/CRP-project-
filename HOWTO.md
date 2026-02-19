@@ -90,7 +90,7 @@ Edit: `C:\Users\YourName\.config\claude-mcp\config.json`
         "--server", "http://192.168.1.100:5000"
       ],
       "env": {
-        "KALI_API_KEY": "kali-research-project-2024"
+        "KALI_API_KEY": "kali-research-project-2026"
       }
     }
   }

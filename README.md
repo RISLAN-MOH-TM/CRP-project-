@@ -189,7 +189,7 @@ curl http://192.168.1.100:5000/health
 # Nmap scan
 curl -X POST http://192.168.1.100:5000/api/tools/nmap \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: kali-research-project-2024" \
+  -H "X-API-Key: kali-research-project-2026" \
   -d '{
     "target": "192.168.1.1",
     "scan_type": "-sV",
@@ -199,7 +199,7 @@ curl -X POST http://192.168.1.100:5000/api/tools/nmap \
 # Directory fuzzing with FFUF
 curl -X POST http://192.168.1.100:5000/api/tools/ffuf \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: kali-research-project-2024" \
+  -H "X-API-Key: kali-research-project-2026" \
   -d '{
     "url": "https://example.com/FUZZ",
     "wordlist": "/usr/share/wordlists/dirb/common.txt",
@@ -219,7 +219,7 @@ curl -X POST http://192.168.1.100:5000/api/tools/ffuf \
 
 ### Environment Variables (.env file)
 ```bash
-KALI_API_KEY=kali-research-project-2024
+KALI_API_KEY=kali-research-project-2026
 KALI_SERVER_IP=192.168.1.100
 API_PORT=5000
 DEBUG_MODE=0
