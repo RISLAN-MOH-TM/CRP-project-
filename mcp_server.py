@@ -11,6 +11,13 @@ from typing import Any, Dict, Optional
 import requests
 from mcp.server.fastmcp import FastMCP
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, will use system environment variables
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -22,9 +29,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Default configuration
-DEFAULT_KALI_SERVER = "http://localhost:5000" # change to your linux IP
+DEFAULT_KALI_SERVER = "http://localhost:5000"  # Change to your Kali VM IP
 DEFAULT_REQUEST_TIMEOUT = 1800  # 30 minutes default timeout for API requests
-API_KEY = os.environ.get("KALI_API_KEY")  # API key for authentication
+
+# Default API key for research/development (matches kali_server.py)
+DEFAULT_API_KEY = "kali-research-project-2024"
+API_KEY = os.environ.get("KALI_API_KEY", DEFAULT_API_KEY)
 
 class KaliToolsClient:
     """Client for communicating with the Kali Linux Tools API Server"""
@@ -38,6 +48,10 @@ class KaliToolsClient:
             timeout: Request timeout in seconds
             api_key: Optional API key for authentication
         """
+        # Ensure URL has a protocol prefix
+        if not server_url.startswith(('http://', 'https://')):
+            server_url = f'http://{server_url}'
+        
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
         self.api_key = api_key
@@ -49,7 +63,7 @@ class KaliToolsClient:
         else:
             logger.warning("Initialized Kali Tools Client WITHOUT authentication - set KALI_API_KEY for security")
         
-        logger.info(f"Connecting to {server_url}")
+        logger.info(f"Connecting to {self.server_url}")
         
     def safe_get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
