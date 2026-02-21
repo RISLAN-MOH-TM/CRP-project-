@@ -1,6 +1,7 @@
 # Core dependencies
 flask>=2.3.0
 requests>=2.31.0
+Flask-Limiter>=3.5.0  # Rate limiting protection
 
 # MCP Server
 # Note: Install mcp from the official source
