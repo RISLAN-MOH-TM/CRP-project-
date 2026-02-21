@@ -33,7 +33,7 @@ DEFAULT_KALI_SERVER = "http://localhost:5000"  # Change to your Kali VM IP
 DEFAULT_REQUEST_TIMEOUT = 1800  # 30 minutes default timeout for API requests
 
 # Default API key for research/development (matches kali_server.py)
-DEFAULT_API_KEY = "kali-research-project-2024"
+DEFAULT_API_KEY = "kali-research-project-2026"
 API_KEY = os.environ.get("KALI_API_KEY", DEFAULT_API_KEY)
 
 class KaliToolsClient:
@@ -109,8 +109,41 @@ class KaliToolsClient:
         try:
             logger.debug(f"POST {url} with data: {json_data}")
             response = requests.post(url, json=json_data, timeout=self.timeout, headers=self.headers)
+            
+            # Handle rate limiting gracefully
+            if response.status_code == 429:
+                logger.warning(f"Rate limit exceeded for {endpoint}")
+                return {
+                    "error": "Rate limit exceeded. Please wait before retrying.",
+                    "success": False,
+                    "rate_limited": True,
+                    "status_code": 429,
+                    "retry_after": response.headers.get("Retry-After", "60 seconds")
+                }
+            
+            # Handle concurrent scan limit
+            if response.status_code == 503:
+                logger.warning(f"Service temporarily unavailable (likely max concurrent scans reached)")
+                return {
+                    "error": "Maximum concurrent scans reached. Please wait for running scans to complete.",
+                    "success": False,
+                    "concurrent_limit_reached": True,
+                    "status_code": 503
+                }
+            
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                logger.warning(f"Rate limit exceeded for {endpoint}")
+                return {
+                    "error": "Rate limit exceeded. Please wait before retrying.",
+                    "success": False,
+                    "rate_limited": True,
+                    "status_code": 429
+                }
+            logger.error(f"HTTP error: {str(e)}")
+            return {"error": f"HTTP error: {str(e)}", "success": False, "status_code": e.response.status_code}
         except requests.exceptions.RequestException as e:
             logger.error(f"Request failed: {str(e)}")
             return {"error": f"Request failed: {str(e)}", "success": False}
@@ -139,6 +172,77 @@ class KaliToolsClient:
         """
         return self.safe_get("health")
 
+def format_scan_result(result: Dict[str, Any], tool_name: str) -> str:
+    """
+    Format scan results into a readable report, handling errors gracefully.
+    
+    Args:
+        result: The result dictionary from a tool execution
+        tool_name: Name of the tool that was executed
+        
+    Returns:
+        Formatted string report
+    """
+    report = f"\n{'='*80}\n{tool_name.upper()} SCAN REPORT\n{'='*80}\n\n"
+    
+    # Handle rate limiting
+    if result.get("rate_limited"):
+        report += "⚠️  RATE LIMIT REACHED\n"
+        report += f"Status: Rate limit exceeded\n"
+        report += f"Retry After: {result.get('retry_after', 'Unknown')}\n"
+        report += "\nThis is a protective measure to prevent VM overload.\n"
+        report += "Please wait before running additional scans.\n"
+        return report
+    
+    # Handle concurrent scan limit
+    if result.get("concurrent_limit_reached"):
+        report += "⚠️  CONCURRENT SCAN LIMIT REACHED\n"
+        report += "Status: Maximum concurrent scans running\n"
+        report += "\nPlease wait for running scans to complete before starting new ones.\n"
+        return report
+    
+    # Handle general errors
+    if not result.get("success", False) and result.get("error"):
+        report += f"❌ ERROR: {result['error']}\n"
+        
+        # Still show partial results if available
+        if result.get("stdout"):
+            report += f"\n📊 PARTIAL OUTPUT:\n{'-'*80}\n"
+            report += result["stdout"][:5000]  # Limit to first 5000 chars
+            if len(result["stdout"]) > 5000:
+                report += "\n... (output truncated for readability)"
+        
+        return report
+    
+    # Handle timeout with partial results
+    if result.get("timed_out") and result.get("partial_results"):
+        report += "⏱️  SCAN TIMED OUT (Partial Results Available)\n\n"
+    
+    # Show successful results
+    if result.get("success"):
+        report += "✅ SCAN COMPLETED SUCCESSFULLY\n\n"
+    
+    # Add stdout output
+    if result.get("stdout"):
+        report += f"📊 OUTPUT:\n{'-'*80}\n"
+        report += result["stdout"]
+        report += f"\n{'-'*80}\n"
+    
+    # Add stderr if present
+    if result.get("stderr") and result["stderr"].strip():
+        report += f"\n⚠️  WARNINGS/ERRORS:\n{'-'*80}\n"
+        report += result["stderr"]
+        report += f"\n{'-'*80}\n"
+    
+    # Add metadata
+    report += f"\nReturn Code: {result.get('return_code', 'N/A')}\n"
+    
+    if result.get("timed_out"):
+        report += "Note: Scan timed out but partial results are shown above.\n"
+    
+    report += f"\n{'='*80}\n"
+    return report
+
 def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
     """
     Set up the MCP server with all tool functions
@@ -152,7 +256,7 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
     mcp = FastMCP("kali_mcp")
     
     @mcp.tool(name="nmap_scan")
-    def nmap_scan(target: str, scan_type: str = "-sV", ports: str = "", additional_args: str = "") -> Dict[str, Any]:
+    def nmap_scan(target: str, scan_type: str = "-sV", ports: str = "", additional_args: str = "") -> str:
         """
         Execute an Nmap scan against a target.
         
@@ -163,7 +267,7 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             additional_args: Additional Nmap arguments
             
         Returns:
-            Scan results
+            Formatted scan report (handles rate limits gracefully)
         """
         data = {
             "target": target,
@@ -171,7 +275,8 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "ports": ports,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/nmap", data)
+        result = kali_client.safe_post("api/tools/nmap", data)
+        return format_scan_result(result, f"Nmap Scan: {target}")
 
     @mcp.tool(name="gobuster_scan")
     def gobuster_scan(url: str, mode: str = "dir", wordlist: str = "/usr/share/wordlists/dirb/common.txt", additional_args: str = "") -> Dict[str, Any]:

@@ -52,7 +52,7 @@ PCP-project-/
 ```
 Kali VM IP:        172.20.10.10
 Port:              5000
-API Key:           kali-research-project-2024
+API Key:           kali-research-project-2026
 Connection:        HEALTHY ✅
 Tools Available:   12/12 ✅
 ```

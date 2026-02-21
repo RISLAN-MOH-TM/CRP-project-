@@ -60,7 +60,7 @@ This prevents resource exhaustion by limiting how many heavy scans can run simul
 ### 1. API Key Authentication
 - All endpoints require `X-API-Key` header
 - Uses constant-time comparison to prevent timing attacks
-- Default key: `kali-research-project-2024` (CHANGE IN PRODUCTION!)
+- Default key: `kali-research-project-2026` (CHANGE IN PRODUCTION!)
 - Set via `KALI_API_KEY` environment variable
 
 ### 2. Command Validation
@@ -128,6 +128,13 @@ HTTP 429 Too Many Requests
   "error": "Rate limit exceeded"
 }
 ```
+
+The MCP client handles this gracefully and generates a formatted report with:
+- Clear explanation of what happened
+- Any partial results collected before the limit
+- Guidance on when to retry
+
+See [RATE_LIMIT_GUIDE.md](RATE_LIMIT_GUIDE.md) for detailed information on efficient report generation with rate limits.
 
 ## Monitoring
 
@@ -215,7 +222,7 @@ Test with curl:
 # Send multiple requests quickly
 for i in {1..20}; do
   curl -X POST http://localhost:5000/api/tools/nmap \
-    -H "X-API-Key: kali-research-project-2024" \
+    -H "X-API-Key: kali-research-project-2026" \
     -H "Content-Type: application/json" \
     -d '{"target":"scanme.nmap.org","scan_type":"-sn"}' &
 done

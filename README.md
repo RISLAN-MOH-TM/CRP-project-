@@ -55,7 +55,7 @@ This project enables AI agents like Claude to control Kali Linux penetration tes
 - **Enumeration:** Enum4linux-ng, Amass
 
 ### 🔒 Security Features
-- ✅ API key authentication (default: `kali-research-project-2024`)
+- ✅ API key authentication (default: `kali-research-project-2026`)
 - ✅ Rate limiting (prevents abuse)
 - ✅ Command whitelist (only approved tools)
 - ✅ Path sanitization (prevents path traversal)
@@ -116,7 +116,7 @@ cd PCP-project-
 
 # 3. Create .env file
 @"
-KALI_API_KEY=kali-research-project-2024
+KALI_API_KEY=kali-research-project-2026
 KALI_SERVER_IP=192.168.1.100
 "@ | Out-File -FilePath ".env" -Encoding UTF8
 
@@ -140,7 +140,7 @@ curl http://192.168.1.100:5000/health
         "--server", "http://192.168.1.100:5000"
       ],
       "env": {
-        "KALI_API_KEY": "kali-research-project-2024"
+        "KALI_API_KEY": "kali-research-project-2026"
       }
     }
   }
@@ -212,7 +212,7 @@ curl -X POST http://192.168.1.100:5000/api/tools/ffuf \
 ## 🔧 Configuration
 
 ### Default Settings
-- **API Key:** `kali-research-project-2024` (for research use)
+- **API Key:** `kali-research-project-2026` (for research use)
 - **Port:** 5000
 - **Timeout:** 180 seconds (3 minutes)
 - **Rate Limit:** 10 requests/minute per endpoint

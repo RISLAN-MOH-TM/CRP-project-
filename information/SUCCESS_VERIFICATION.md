@@ -42,7 +42,7 @@
 ### Kali VM
 - **IP Address:** 172.20.10.10
 - **Port:** 5000
-- **API Key:** kali-research-project-2024
+- **API Key:** kali-research-project-2026
 - **Status:** Running
 
 ### Windows Host
@@ -136,7 +136,7 @@ python3 kali_server.py --ip 0.0.0.0 --port 5000
 Get-Content .env
 
 # Should show:
-# KALI_API_KEY=kali-research-project-2024
+# KALI_API_KEY=kali-research-project-2026
 # KALI_SERVER_IP=172.20.10.10
 ```
 

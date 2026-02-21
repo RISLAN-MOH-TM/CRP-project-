@@ -48,7 +48,7 @@ cd C:\Users\User\User\Desktop\mcp
 
 # Create .env file
 @"
-KALI_API_KEY=kali-research-project-2024
+KALI_API_KEY=kali-research-project-2026
 KALI_SERVER_IP=192.168.1.100
 "@ | Out-File -FilePath ".env" -Encoding UTF8
 
@@ -60,7 +60,7 @@ Get-Content .env
 1. Open Notepad
 2. Type exactly this:
 ```
-KALI_API_KEY=kali-research-project-2024
+KALI_API_KEY=kali-research-project-2026
 KALI_SERVER_IP=192.168.1.100
 ```
 3. Click File → Save As

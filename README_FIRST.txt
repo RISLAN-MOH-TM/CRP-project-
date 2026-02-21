@@ -15,7 +15,7 @@ STATUS:
 YOUR CONFIGURATION:
 -------------------
 Kali VM IP:    172.20.10.10
-API Key:       kali-research-project-2024
+API Key:       kali-research-project-2026
 Port:          5000
 Status:        OPERATIONAL ✅
 
