@@ -48,6 +48,10 @@ class KaliToolsClient:
             timeout: Request timeout in seconds
             api_key: Optional API key for authentication
         """
+        # Ensure URL has a protocol prefix
+        if not server_url.startswith(('http://', 'https://')):
+            server_url = f'http://{server_url}'
+        
         self.server_url = server_url.rstrip("/")
         self.timeout = timeout
         self.api_key = api_key
@@ -59,7 +63,7 @@ class KaliToolsClient:
         else:
             logger.warning("Initialized Kali Tools Client WITHOUT authentication - set KALI_API_KEY for security")
         
-        logger.info(f"Connecting to {server_url}")
+        logger.info(f"Connecting to {self.server_url}")
         
     def safe_get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
