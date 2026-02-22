@@ -13,6 +13,7 @@ import sys
 import traceback
 import threading
 from typing import Dict, Any
+from datetime import datetime
 from flask import Flask, request, jsonify
 
 # Configure logging
@@ -30,7 +31,65 @@ API_PORT = int(os.environ.get("API_PORT", 5000))
 DEBUG_MODE = os.environ.get("DEBUG_MODE", "0").lower() in ("1", "true", "yes", "y")
 COMMAND_TIMEOUT = 180  # 5 minutes default timeout
 
+# Scan logging directory
+SCAN_LOG_DIR = "/opt/scans/logs"
+os.makedirs(SCAN_LOG_DIR, exist_ok=True)
+
 app = Flask(__name__)
+
+# Scan logging functions
+def log_scan_request(tool_name: str, params: dict, client_ip: str) -> str:
+    """Log scan request with unique ID"""
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        scan_id = f"{tool_name}_{timestamp}_{client_ip.replace('.', '_')}"
+        log_file = f"{SCAN_LOG_DIR}/{scan_id}.json"
+        
+        log_data = {
+            "scan_id": scan_id,
+            "tool": tool_name,
+            "parameters": params,
+            "client_ip": client_ip,
+            "start_time": datetime.now().isoformat(),
+            "status": "started"
+        }
+        
+        with open(log_file, 'w') as f:
+            json.dump(log_data, f, indent=2)
+        
+        logger.info(f"Scan logged: {scan_id}")
+        return scan_id
+    except Exception as e:
+        logger.error(f"Error logging scan request: {str(e)}")
+        return f"error_{timestamp}"
+
+def log_scan_result(scan_id: str, result: dict):
+    """Update scan log with results"""
+    try:
+        log_file = f"{SCAN_LOG_DIR}/{scan_id}.json"
+        
+        if os.path.exists(log_file):
+            with open(log_file, 'r') as f:
+                log_data = json.load(f)
+            
+            log_data.update({
+                "end_time": datetime.now().isoformat(),
+                "status": "completed" if result.get("success") else "failed",
+                "result": {
+                    "success": result.get("success"),
+                    "return_code": result.get("return_code"),
+                    "stdout_length": len(result.get("stdout", "")),
+                    "stderr_length": len(result.get("stderr", "")),
+                    "timed_out": result.get("timed_out", False)
+                }
+            })
+            
+            with open(log_file, 'w') as f:
+                json.dump(log_data, f, indent=2)
+            
+            logger.info(f"Scan result logged: {scan_id}")
+    except Exception as e:
+        logger.error(f"Error logging scan result: {str(e)}")
 
 class CommandExecutor:
     """Class to handle command execution with better timeout management"""
@@ -166,6 +225,7 @@ def generic_command():
 @app.route("/api/tools/nmap", methods=["POST"])
 def nmap():
     """Execute nmap scan with the provided parameters."""
+    scan_id = None
     try:
         params = request.json
         target = params.get("target", "")
@@ -177,7 +237,10 @@ def nmap():
             logger.warning("Nmap called without target parameter")
             return jsonify({
                 "error": "Target parameter is required"
-            }), 400        
+            }), 400
+        
+        # Log scan request
+        scan_id = log_scan_request("nmap", params, request.remote_addr)
         
         command = f"nmap {scan_type}"
         
@@ -191,10 +254,21 @@ def nmap():
         command += f" {target}"
         
         result = execute_command(command)
+        
+        # Log scan result
+        if scan_id:
+            log_scan_result(scan_id, result)
+            result["scan_id"] = scan_id
+        
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error in nmap endpoint: {str(e)}")
         logger.error(traceback.format_exc())
+        
+        # Log failed scan
+        if scan_id:
+            log_scan_result(scan_id, {"success": False, "error": str(e)})
+        
         return jsonify({
             "error": f"Server error: {str(e)}"
         }), 500
@@ -753,6 +827,55 @@ def get_capabilities():
 def execute_tool(tool_name):
     # Direct tool execution without going through the API server
     pass
+
+# Scan history endpoints
+@app.route("/api/scans/history", methods=["GET"])
+def scan_history():
+    """Get recent scan history"""
+    try:
+        limit = int(request.args.get('limit', 20))
+        
+        # Get all log files
+        if not os.path.exists(SCAN_LOG_DIR):
+            return jsonify({"total": 0, "scans": []})
+        
+        log_files = sorted(
+            [f for f in os.listdir(SCAN_LOG_DIR) if f.endswith('.json')],
+            reverse=True
+        )[:limit]
+        
+        scans = []
+        for log_file in log_files:
+            try:
+                with open(f"{SCAN_LOG_DIR}/{log_file}", 'r') as f:
+                    scans.append(json.load(f))
+            except Exception as e:
+                logger.error(f"Error reading log file {log_file}: {str(e)}")
+        
+        return jsonify({
+            "total": len(scans),
+            "scans": scans
+        })
+    except Exception as e:
+        logger.error(f"Error getting scan history: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/scans/<scan_id>", methods=["GET"])
+def get_scan(scan_id):
+    """Get specific scan details"""
+    try:
+        log_file = f"{SCAN_LOG_DIR}/{scan_id}.json"
+        
+        if not os.path.exists(log_file):
+            return jsonify({"error": "Scan not found"}), 404
+        
+        with open(log_file, 'r') as f:
+            scan_data = json.load(f)
+        
+        return jsonify(scan_data)
+    except Exception as e:
+        logger.error(f"Error getting scan: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 def parse_args():
     """Parse command line arguments."""

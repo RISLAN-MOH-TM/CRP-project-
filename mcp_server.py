@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 from typing import Any, Dict, Optional
+from datetime import datetime
 
 import requests
 from mcp.server.fastmcp import FastMCP
@@ -28,6 +29,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Results directory for saving scan outputs
+RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+def save_result_to_file(tool_name: str, target: str, result: str) -> str:
+    """Save scan result to persistent file"""
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Sanitize target for filename
+        safe_target = target.replace('/', '_').replace(':', '_').replace('\\', '_')
+        filename = f"{tool_name}_{safe_target}_{timestamp}.txt"
+        filepath = os.path.join(RESULTS_DIR, filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(result)
+        
+        logger.info(f"Results saved to: {filepath}")
+        return filepath
+    except Exception as e:
+        logger.error(f"Error saving results to file: {str(e)}")
+        return ""
 # Default configuration
 DEFAULT_KALI_SERVER = "http://localhost:5000"  # Change to your Kali VM IP
 DEFAULT_REQUEST_TIMEOUT = 1800  # 30 minutes default timeout for API requests
@@ -276,7 +298,22 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/nmap", data)
-        return format_scan_result(result, f"Nmap Scan: {target}")
+        formatted = format_scan_result(result, f"Nmap Scan: {target}")
+        
+        # Save to file
+        filepath = save_result_to_file("nmap", target, formatted)
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+            formatted += "💾 You can review this file even if the connection is lost.\n"
+        
+        # Add scan ID if available
+        if result.get("scan_id"):
+            formatted += f"🔍 Scan ID: {result['scan_id']}\n"
+            formatted += "   Use 'get_scan_details' to retrieve this scan later.\n"
+        
+        return formatted
 
     @mcp.tool(name="gobuster_scan")
     def gobuster_scan(url: str, mode: str = "dir", wordlist: str = "/usr/share/wordlists/dirb/common.txt", additional_args: str = "") -> Dict[str, Any]:
@@ -600,6 +637,101 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             Command execution results
         """
         return kali_client.execute_command(command)
+    
+    @mcp.tool(name="get_scan_history")
+    def get_scan_history(limit: int = 20) -> str:
+        """
+        Get recent scan history to recover context after crash.
+        
+        Args:
+            limit: Number of recent scans to retrieve (default: 20)
+            
+        Returns:
+            Formatted list of recent scans with results
+        """
+        result = kali_client.safe_get("api/scans/history", {"limit": limit})
+        
+        if result.get("error"):
+            return f"❌ Error: {result['error']}"
+        
+        scans = result.get("scans", [])
+        
+        if not scans:
+            return "📋 No scan history found."
+        
+        report = f"\n{'='*80}\n📊 RECENT SCAN HISTORY ({len(scans)} scans)\n{'='*80}\n\n"
+        
+        for i, scan in enumerate(scans, 1):
+            status_icon = "✅" if scan.get('status') == 'completed' else "⏳" if scan.get('status') == 'started' else "❌"
+            
+            report += f"{i}. {status_icon} {scan['tool'].upper()}\n"
+            report += f"   Scan ID: {scan['scan_id']}\n"
+            report += f"   Started: {scan['start_time']}\n"
+            report += f"   Status: {scan['status']}\n"
+            
+            if scan.get('parameters'):
+                # Show key parameters
+                params = scan['parameters']
+                if 'target' in params:
+                    report += f"   Target: {params['target']}\n"
+                elif 'url' in params:
+                    report += f"   URL: {params['url']}\n"
+                elif 'domain' in params:
+                    report += f"   Domain: {params['domain']}\n"
+            
+            if scan.get('end_time'):
+                report += f"   Completed: {scan['end_time']}\n"
+            
+            report += f"{'-'*80}\n\n"
+        
+        report += "💡 Tip: Use 'get_scan_details(scan_id)' to see full results\n"
+        return report
+    
+    @mcp.tool(name="get_scan_details")
+    def get_scan_details(scan_id: str) -> str:
+        """
+        Get full details of a specific scan.
+        
+        Args:
+            scan_id: The scan ID to retrieve
+            
+        Returns:
+            Complete scan details including full results
+        """
+        result = kali_client.safe_get(f"api/scans/{scan_id}")
+        
+        if result.get("error"):
+            return f"❌ Error: {result['error']}"
+        
+        report = f"\n{'='*80}\n🔍 SCAN DETAILS: {scan_id}\n{'='*80}\n\n"
+        report += f"Tool: {result['tool'].upper()}\n"
+        report += f"Started: {result['start_time']}\n"
+        report += f"Status: {result['status']}\n"
+        
+        if result.get('end_time'):
+            report += f"Completed: {result['end_time']}\n"
+        
+        if result.get('parameters'):
+            report += f"\n📋 Parameters:\n"
+            for key, value in result['parameters'].items():
+                report += f"   {key}: {value}\n"
+        
+        if result.get('result'):
+            scan_result = result['result']
+            report += f"\n{'='*80}\n📊 RESULTS\n{'='*80}\n\n"
+            
+            report += f"Success: {'✅ Yes' if scan_result.get('success') else '❌ No'}\n"
+            report += f"Return Code: {scan_result.get('return_code', 'N/A')}\n"
+            
+            if scan_result.get('timed_out'):
+                report += "⏱️  Note: Scan timed out (partial results may be available)\n"
+            
+            report += f"\nOutput Length: {scan_result.get('stdout_length', 0)} characters\n"
+            report += f"Error Length: {scan_result.get('stderr_length', 0)} characters\n"
+            
+            report += "\n💡 Full output was saved to the results directory on the MCP server\n"
+        
+        return report
 
     return mcp
 
