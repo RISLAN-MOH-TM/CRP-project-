@@ -358,6 +358,8 @@ def sqlmap():
         }), 500
 
 @app.route("/api/tools/metasploit", methods=["POST"])
+@require_api_key
+@dynamic_rate_limit("metasploit")
 def metasploit():
     """Execute metasploit module with the provided parameters."""
     try:
@@ -371,30 +373,25 @@ def metasploit():
                 "error": "Module parameter is required"
             }), 400
         
-        # Format options for Metasploit
-        options_str = ""
-        for key, value in options.items():
-            options_str += f" {key}={value}"
+        # Create an MSF resource script with secure temp file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.rc', delete=False, dir='/tmp') as tmp_file:
+            resource_file = tmp_file.name
+            resource_content = f"use {module}\n"
+            for key, value in options.items():
+                resource_content += f"set {sanitize_arg(key)} {sanitize_arg(value)}\n"
+            resource_content += "run\nexit\n"
+            tmp_file.write(resource_content)
         
-        # Create an MSF resource script
-        resource_content = f"use {module}\n"
-        for key, value in options.items():
-            resource_content += f"set {key} {value}\n"
-        resource_content += "exploit\n"
-        
-        # Save resource script to a temporary file
-        resource_file = "/tmp/mcp_msf_resource.rc"
-        with open(resource_file, "w") as f:
-            f.write(resource_content)
-        
-        command = f"msfconsole -q -r {resource_file}"
-        result = execute_command(command)
-        
-        # Clean up the temporary file
         try:
-            os.remove(resource_file)
-        except Exception as e:
-            logger.warning(f"Error removing temporary resource file: {str(e)}")
+            command = build_safe_command("msfconsole", ["-q", "-r", resource_file])
+            result = execute_command(command)
+        finally:
+            # Clean up the temporary file
+            try:
+                if os.path.exists(resource_file):
+                    os.remove(resource_file)
+            except Exception as e:
+                logger.warning(f"Error removing temporary resource file: {str(e)}")
         
         return jsonify(result)
     except Exception as e:

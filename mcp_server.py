@@ -363,22 +363,27 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         return kali_client.safe_post("api/tools/sqlmap", post_data)
 
     @mcp.tool(name="metasploit_run")
-    def metasploit_run(module: str, options: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def metasploit_run(module: str, options: Dict[str, Any] = {}) -> str:
         """
-        Execute a Metasploit module.
+        Execute a Metasploit Framework module.
         
         Args:
-            module: The Metasploit module path
-            options: Dictionary of module options
+            module: The Metasploit module path (e.g., "exploit/windows/smb/ms17_010_eternalblue")
+            options: Dictionary of module options (e.g., {"RHOSTS": "192.168.1.100", "LHOST": "192.168.1.50"})
             
         Returns:
-            Module execution results
+            Formatted module execution report
+            
+        Examples:
+            - Scan: metasploit_run("auxiliary/scanner/smb/smb_version", {"RHOSTS": "192.168.1.0/24"})
+            - Exploit: metasploit_run("exploit/multi/handler", {"PAYLOAD": "windows/meterpreter/reverse_tcp", "LHOST": "192.168.1.50"})
         """
         data = {
             "module": module,
             "options": options
         }
-        return kali_client.safe_post("api/tools/metasploit", data)
+        result = kali_client.safe_post("api/tools/metasploit", data)
+        return format_scan_result(result, f"Metasploit: {module}")
 
     @mcp.tool(name="hydra_attack")
     def hydra_attack(

@@ -163,9 +163,12 @@ curl http://192.168.1.100:5000/health
 | Document | Description |
 |----------|-------------|
 | [README_FIRST.txt](README_FIRST.txt) | Quick start overview - **START HERE!** |
-| [HOWTO.md](HOWTO.md) | Simple step-by-step guide |
-| [PROJECT_SETUP.md](PROJECT_SETUP.md) | Complete setup for VM architecture |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common problems & solutions |
+| [HOWTO.md](information/HOWTO.md) | Simple step-by-step guide |
+| [PROJECT_SETUP.md](information/PROJECT_SETUP.md) | Complete setup for VM architecture |
+| [SECURITY.md](information/SECURITY.md) | Security features and rate limiting |
+| [DYNAMIC_RATE_LIMITING.md](information/DYNAMIC_RATE_LIMITING.md) | Advanced adaptive rate limiting |
+| [RATE_LIMIT_GUIDE.md](information/RATE_LIMIT_GUIDE.md) | Efficient report generation with rate limits |
+| [METASPLOIT_GUIDE.md](information/METASPLOIT_GUIDE.md) | Complete Metasploit Framework usage guide |
 
 ---
 
@@ -181,6 +184,10 @@ curl http://192.168.1.100:5000/health
 "Check if https://wordpress-site.com has any WordPress vulnerabilities"
 
 "Scan the network 192.168.1.0/24 for live hosts"
+
+"Use Metasploit to check if 192.168.1.100 is vulnerable to EternalBlue"
+
+"Run Metasploit SMB version scanner on 192.168.1.0/24"
 ```
 
 ### Direct API Calls
@@ -194,6 +201,17 @@ curl -X POST http://192.168.1.100:5000/api/tools/nmap \
     "target": "192.168.1.1",
     "scan_type": "-sV",
     "ports": "80,443,8080"
+  }'
+
+# Metasploit SMB scanner
+curl -X POST http://192.168.1.100:5000/api/tools/metasploit \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: kali-research-project-2026" \
+  -d '{
+    "module": "auxiliary/scanner/smb/smb_version",
+    "options": {
+      "RHOSTS": "192.168.1.100"
+    }
   }'
 
 # Directory fuzzing with FFUF
