@@ -934,8 +934,6 @@ See attached JSON files in results/ directory for complete technical details.
 ### Short-term (3-6 months)
 
 1. **Enhanced Reporting**
-   - PDF export with charts
-   - Customizable templates
    - Multi-language support
 
 2. **Additional Tools**
