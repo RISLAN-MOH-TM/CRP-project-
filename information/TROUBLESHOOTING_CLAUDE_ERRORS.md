@@ -148,7 +148,6 @@ Look for:
 ```bash
 # On Kali VM, kill unnecessary processes
 pkill -9 firefox
-pkill -9 burpsuite
 
 # Restart Kali server to clear stuck scans
 sudo systemctl restart kali_server  # If using systemd

@@ -33,18 +33,18 @@ Complete analysis of current tools and recommendations for additions/modificatio
 
 ### Priority 1: HIGH IMPACT (Strongly Recommended)
 
-#### 1. **Burp Suite (Community Edition)**
-- **Category:** Web Application Testing
-- **Why:** Industry standard for web app security testing
-- **Use Cases:** 
-  - Intercepting HTTP/HTTPS traffic
-  - Manual testing and manipulation
-  - Automated scanning (Pro version)
-- **Implementation Difficulty:** ⭐⭐⭐⭐ (GUI application, complex)
-- **Alternative:** Use Burp Suite manually, not through API
-- **Recommendation:** Document how to use alongside MCP tools
+#### 1. **Nuclei** ✅ ADDED
+- **Category:** Vulnerability Scanner
+- **Why:** Fast, template-based vulnerability scanner
+- **Use Cases:**
+  - CVE detection
+  - Misconfigurations
+  - Exposed panels
+- **Implementation Difficulty:** ⭐⭐ (Easy)
+- **Command Example:** `nuclei -u https://example.com -t cves/`
+- **Status:** ⭐⭐⭐⭐⭐ IMPLEMENTED
 
-#### 2. **Nuclei**
+#### 2. **Masscan** ✅ ADDED
 - **Category:** Vulnerability Scanner
 - **Why:** Fast, template-based vulnerability scanner
 - **Use Cases:**
@@ -286,8 +286,8 @@ TOOL_CATEGORIES = {
 1. ⏳ Add CrackMapExec
 2. ⏳ Add Netcat utilities
 3. ⏳ Add Responder
-4. ⏳ Add Tshark
-5. ⏳ Document Burp Suite integration
+4. ⏳ Add additional enumeration tools
+5. ⏳ Enhance existing tool profiles
 
 ---
 
@@ -339,9 +339,10 @@ searchsploit apache 2.4
 
 ## 🚫 Tools NOT Recommended
 
-### 1. **Burp Suite (via API)**
-- **Why:** GUI application, not suitable for API
-- **Alternative:** Document manual usage alongside MCP
+### 1. **GUI-Based Tools**
+- **Examples:** Burp Suite, Zenmap, Wireshark GUI
+- **Why:** GUI applications are not suitable for API/MCP integration
+- **Alternative:** Use command-line equivalents (nmap, tshark) or use manually
 
 ### 2. **Aircrack-ng**
 - **Why:** Requires specific hardware (wireless adapter)
@@ -350,10 +351,6 @@ searchsploit apache 2.4
 ### 3. **Dirb**
 - **Why:** Redundant (you have Gobuster, Feroxbuster, FFUF)
 - **Alternative:** Use existing tools
-
-### 4. **Zenmap**
-- **Why:** GUI for nmap (redundant)
-- **Alternative:** Use nmap directly
 
 ---
 
@@ -390,11 +387,10 @@ searchsploit apache 2.4
 - **Gaps:** Modern vulnerability scanning, fast network scanning
 
 ### Recommended Actions
-1. **Add 5 high-priority tools** (Nuclei, Masscan, Subfinder, Searchsploit, Whatweb)
+1. **Add 5 high-priority tools** ✅ COMPLETED (Nuclei, Masscan, Subfinder, Searchsploit, Whatweb)
 2. **Enhance existing tools** (Nmap profiles, SQLmap profiles, Metasploit presets)
-3. **Improve OpenVAS** or replace with Nuclei
-4. **Add tool categories** for better organization
-5. **Document Burp Suite** manual integration
+3. **Add tool categories** for better organization
+4. **Continue expanding** with specialized tools as needed
 
 ### Expected Outcome
 - **Total Tools:** 21 (16 current + 5 new)

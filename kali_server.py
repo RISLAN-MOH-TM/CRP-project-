@@ -992,8 +992,8 @@ def health_check():
         "tools_status": tools_status,
         "all_essential_tools_available": all_essential_tools_available,
         "notes": {
-            "burp_suite": "Burp Suite Community Edition should be installed separately and run manually as it's a GUI application",
-            "new_tools": "Added: Nuclei, Masscan, Subfinder, Searchsploit, WhatWeb for enhanced scanning capabilities"
+            "new_tools": "Added: Nuclei, Masscan, Subfinder, Searchsploit, WhatWeb for enhanced scanning capabilities",
+            "total_tools": len(essential_tools)
         }
     })
 

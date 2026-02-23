@@ -126,7 +126,7 @@ KALI_SERVER_IP=192.168.1.100
 curl http://192.168.1.100:5000/health
 ```
 
-### Part 3: AI Integration (Choose One)
+### Part 3: AI Integration
 
 #### Option A: Claude Desktop ($20/month)
 
@@ -158,40 +158,28 @@ curl http://192.168.1.100:5000/health
 "Find hidden directories on https://example.com"
 ```
 
-#### Option B: Cline + Ollama (100% FREE!) ⭐ RECOMMENDED
+#### Option B: Cline + OpenRouter (FREE Alternative)
 
-**Why Cline + Ollama?**
-- ✅ Completely FREE (no monthly costs)
-- ✅ 100% Private (runs locally)
-- ✅ No rate limits
-- ✅ Works offline
+**Why Cline + OpenRouter?**
+- ✅ Free tier available
+- ✅ Easy setup (5 minutes)
+- ✅ Multiple AI models to choose from
 - ✅ Same tool execution as Claude Desktop
 
-**Quick Setup (5 minutes):**
+**Quick Setup:**
 
-1. **Install Ollama:**
-   - Download: https://ollama.ai/download
-   - Run installer
-   - Open PowerShell:
-   ```powershell
-   ollama pull llama3.1:8b
-   ```
-
-2. **Install Cline in VS Code:**
+1. **Install Cline in VS Code:**
    - Open VS Code
    - Press `Ctrl+Shift+X`
    - Search "Cline"
    - Click Install
 
-3. **Configure Cline:**
+2. **Configure Cline:**
    - Press `Ctrl+,` (Settings)
    - Click `{}` icon (top right)
    - Add this to settings.json:
    ```json
    {
-     "cline.apiProvider": "ollama",
-     "cline.ollamaModelId": "llama3.1:8b",
-     "cline.ollamaBaseUrl": "http://localhost:11434",
      "cline.mcpServers": {
        "kali-tools": {
          "command": "python",
@@ -207,12 +195,19 @@ curl http://192.168.1.100:5000/health
    }
    ```
 
-4. **Test:**
-   - Press `Ctrl+Shift+P`
-   - Type "Cline: Open"
-   - Ask: "Check Kali server health"
+3. **Get OpenRouter API Key:**
+   - Visit: https://openrouter.ai/
+   - Sign up for free account
+   - Get your API key
 
-**See [QUICK_START_CLINE_OLLAMA.txt](QUICK_START_CLINE_OLLAMA.txt) for detailed guide!**
+4. **Configure in Cline:**
+   - Open Cline
+   - Select "OpenRouter" as provider
+   - Enter your API key
+   - Choose a free model (e.g., google/gemini-2.0-flash-exp:free)
+
+5. **Test:**
+   - Ask: "Check Kali server health"
 
 ---
 
@@ -221,17 +216,16 @@ curl http://192.168.1.100:5000/health
 | Document | Description |
 |----------|-------------|
 | [README_FIRST.txt](README_FIRST.txt) | Quick start overview - **START HERE!** |
-| [QUICK_START_CLINE_OLLAMA.txt](QUICK_START_CLINE_OLLAMA.txt) | **FREE Alternative to Claude Desktop** ⭐ |
 | [HOWTO.md](information/HOWTO.md) | Simple step-by-step guide |
 | [PROJECT_SETUP.md](information/PROJECT_SETUP.md) | Complete setup for VM architecture |
-| [CLINE_OLLAMA_SETUP.md](information/CLINE_OLLAMA_SETUP.md) | Complete Cline + Ollama setup guide |
-| [ALTERNATIVE_AI_CLIENTS.md](information/ALTERNATIVE_AI_CLIENTS.md) | All AI client options comparison |
 | [SECURITY.md](information/SECURITY.md) | Security features and rate limiting |
 | [DYNAMIC_RATE_LIMITING.md](information/DYNAMIC_RATE_LIMITING.md) | Advanced adaptive rate limiting |
 | [RATE_LIMIT_GUIDE.md](information/RATE_LIMIT_GUIDE.md) | Efficient report generation with rate limits |
 | [METASPLOIT_GUIDE.md](information/METASPLOIT_GUIDE.md) | Complete Metasploit Framework usage guide |
 | [PERSISTENCE_FEATURES.md](information/PERSISTENCE_FEATURES.md) | Automatic logging and crash recovery |
 | [TOOLS_REFERENCE.md](information/TOOLS_REFERENCE.md) | Complete tool reference with examples |
+| [NEW_TOOLS_INSTALLATION.md](information/NEW_TOOLS_INSTALLATION.md) | Installation guide for new tools |
+| [TOOLS_ANALYSIS_AND_RECOMMENDATIONS.md](information/TOOLS_ANALYSIS_AND_RECOMMENDATIONS.md) | Tool analysis and recommendations |
 
 ---
 
