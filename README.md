@@ -933,15 +933,12 @@ See attached JSON files in results/ directory for complete technical details.
 
 ### Short-term (3-6 months)
 
-1. **Enhanced Reporting**
-   - Multi-language support
-
-2. **Additional Tools**
+1. **Additional Tools**
    - CrackMapExec for AD testing
    - Responder for network poisoning
    - Custom exploit modules
 
-3. **Web Interface**
+2. **Web Interface**
    - Dashboard for scan management
    - Real-time progress monitoring
    - Historical trend analysis
