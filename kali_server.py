@@ -846,7 +846,7 @@ def openvas():
 def health_check():
     """Health check endpoint."""
     # Check if essential tools are installed
-    essential_tools = ["nmap", "gobuster", "feroxbuster", "nikto", "sqlmap", "hydra", "john", "wpscan", "enum4linux-ng", "ffuf", "amass", "hashcat"]
+    essential_tools = ["nmap", "gobuster", "feroxbuster", "nikto", "sqlmap", "msfconsole", "hydra", "john", "wpscan", "enum4linux-ng", "ffuf", "amass", "hashcat"]
     tools_status = {}
     
     for tool in essential_tools:
