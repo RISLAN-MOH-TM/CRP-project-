@@ -809,24 +809,32 @@ def hashcat():
             "error": f"Server error: {str(e)}"
         }), 500
 
-@app.route("/api/tools/openvas", methods=["POST"])
-def openvas():
-    """Execute OpenVAS scan with the provided parameters."""
+@app.route("/api/tools/nuclei", methods=["POST"])
+def nuclei():
+    """Execute Nuclei vulnerability scanner with the provided parameters."""
     try:
         params = request.json
         target = params.get("target", "")
-        scan_config = params.get("scan_config", "Full and fast")
+        templates = params.get("templates", "")
+        severity = params.get("severity", "critical,high,medium")
         additional_args = params.get("additional_args", "")
         
         if not target:
-            logger.warning("OpenVAS called without target parameter")
+            logger.warning("Nuclei called without target parameter")
             return jsonify({
                 "error": "Target parameter is required"
             }), 400
         
-        # Note: This is a simplified OpenVAS command. In practice, OpenVAS requires
-        # more complex setup with GVM (Greenbone Vulnerability Management)
-        command = f"gvm-cli socket --xml \"<create_target><name>MCP Target</name><hosts>{target}</hosts></create_target>\""
+        command = f"nuclei -u {target}"
+        
+        if templates:
+            command += f" -t {templates}"
+        
+        if severity:
+            command += f" -severity {severity}"
+        
+        # Add JSON output for better parsing
+        command += " -json -silent"
         
         if additional_args:
             command += f" {additional_args}"
@@ -834,7 +842,122 @@ def openvas():
         result = execute_command(command)
         return jsonify(result)
     except Exception as e:
-        logger.error(f"Error in openvas endpoint: {str(e)}")
+        logger.error(f"Error in nuclei endpoint: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/tools/masscan", methods=["POST"])
+def masscan():
+    """Execute Masscan fast port scanner with the provided parameters."""
+    try:
+        params = request.json
+        target = params.get("target", "")
+        ports = params.get("ports", "1-65535")
+        rate = params.get("rate", 1000)
+        additional_args = params.get("additional_args", "")
+        
+        if not target:
+            logger.warning("Masscan called without target parameter")
+            return jsonify({
+                "error": "Target parameter is required"
+            }), 400
+        
+        command = f"masscan {target} -p{ports} --rate={rate}"
+        
+        if additional_args:
+            command += f" {additional_args}"
+        
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in masscan endpoint: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/tools/subfinder", methods=["POST"])
+def subfinder():
+    """Execute Subfinder subdomain discovery with the provided parameters."""
+    try:
+        params = request.json
+        domain = params.get("domain", "")
+        additional_args = params.get("additional_args", "-silent")
+        
+        if not domain:
+            logger.warning("Subfinder called without domain parameter")
+            return jsonify({
+                "error": "Domain parameter is required"
+            }), 400
+        
+        command = f"subfinder -d {domain}"
+        
+        if additional_args:
+            command += f" {additional_args}"
+        
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in subfinder endpoint: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/tools/searchsploit", methods=["POST"])
+def searchsploit():
+    """Execute Searchsploit exploit database search with the provided parameters."""
+    try:
+        params = request.json
+        query = params.get("query", "")
+        additional_args = params.get("additional_args", "")
+        
+        if not query:
+            logger.warning("Searchsploit called without query parameter")
+            return jsonify({
+                "error": "Query parameter is required"
+            }), 400
+        
+        command = f"searchsploit {query}"
+        
+        if additional_args:
+            command += f" {additional_args}"
+        
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in searchsploit endpoint: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/tools/whatweb", methods=["POST"])
+def whatweb():
+    """Execute WhatWeb technology detection with the provided parameters."""
+    try:
+        params = request.json
+        target = params.get("target", "")
+        aggression = params.get("aggression", 1)
+        additional_args = params.get("additional_args", "")
+        
+        if not target:
+            logger.warning("WhatWeb called without target parameter")
+            return jsonify({
+                "error": "Target parameter is required"
+            }), 400
+        
+        command = f"whatweb -a {aggression} {target}"
+        
+        if additional_args:
+            command += f" {additional_args}"
+        
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error in whatweb endpoint: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({
             "error": f"Server error: {str(e)}"
@@ -846,7 +969,12 @@ def openvas():
 def health_check():
     """Health check endpoint."""
     # Check if essential tools are installed
-    essential_tools = ["nmap", "gobuster", "feroxbuster", "nikto", "sqlmap", "msfconsole", "hydra", "john", "wpscan", "enum4linux-ng", "ffuf", "amass", "hashcat"]
+    essential_tools = [
+        "nmap", "masscan", "gobuster", "feroxbuster", "nikto", 
+        "sqlmap", "msfconsole", "hydra", "john", "wpscan", 
+        "enum4linux-ng", "ffuf", "amass", "hashcat", "nuclei",
+        "subfinder", "searchsploit", "whatweb"
+    ]
     tools_status = {}
     
     for tool in essential_tools:
@@ -865,7 +993,7 @@ def health_check():
         "all_essential_tools_available": all_essential_tools_available,
         "notes": {
             "burp_suite": "Burp Suite Community Edition should be installed separately and run manually as it's a GUI application",
-            "openvas": "OpenVAS requires additional setup with GVM (Greenbone Vulnerability Management)"
+            "new_tools": "Added: Nuclei, Masscan, Subfinder, Searchsploit, WhatWeb for enhanced scanning capabilities"
         }
     })
 

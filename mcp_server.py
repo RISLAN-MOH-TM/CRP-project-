@@ -595,25 +595,135 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         }
         return kali_client.safe_post("api/tools/hashcat", data)
 
-    @mcp.tool(name="openvas_scan")
-    def openvas_scan(target: str, scan_config: str = "Full and fast", additional_args: str = "") -> Dict[str, Any]:
+    @mcp.tool(name="nuclei_scan")
+    def nuclei_scan(target: str, templates: str = "", severity: str = "critical,high,medium", additional_args: str = "") -> str:
         """
-        Execute OpenVAS vulnerability scanner.
+        Execute Nuclei vulnerability scanner with template-based detection.
         
         Args:
-            target: The target IP or hostname
-            scan_config: Scan configuration name
-            additional_args: Additional OpenVAS arguments
+            target: The target URL or IP to scan
+            templates: Template path or tags (e.g., "cves/", "exposures/", "technologies/")
+            severity: Severity levels to report (critical, high, medium, low, info)
+            additional_args: Additional Nuclei arguments
             
         Returns:
-            Vulnerability scan results
+            Formatted scan report with detected vulnerabilities
+            
+        Examples:
+            - CVE scan: nuclei_scan("https://example.com", templates="cves/", severity="critical,high")
+            - Full scan: nuclei_scan("https://example.com")
+            - Specific tech: nuclei_scan("https://example.com", templates="technologies/wordpress/")
         """
         data = {
             "target": target,
-            "scan_config": scan_config,
+            "templates": templates,
+            "severity": severity,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/openvas", data)
+        result = kali_client.safe_post("api/tools/nuclei", data)
+        return format_scan_result(result, f"Nuclei: {target}")
+
+    @mcp.tool(name="masscan_scan")
+    def masscan_scan(target: str, ports: str = "1-65535", rate: int = 1000, additional_args: str = "") -> str:
+        """
+        Execute Masscan fast port scanner (faster than nmap for large ranges).
+        
+        Args:
+            target: The target IP or CIDR range to scan
+            ports: Port range to scan (default: all ports)
+            rate: Packets per second (default: 1000, max: 10000)
+            additional_args: Additional Masscan arguments
+            
+        Returns:
+            Formatted scan report with open ports
+            
+        Examples:
+            - Quick scan: masscan_scan("192.168.1.0/24", ports="80,443,8080", rate=1000)
+            - Full scan: masscan_scan("192.168.1.100")
+            - Fast scan: masscan_scan("10.0.0.0/8", ports="22,80,443", rate=10000)
+        """
+        data = {
+            "target": target,
+            "ports": ports,
+            "rate": rate,
+            "additional_args": additional_args
+        }
+        result = kali_client.safe_post("api/tools/masscan", data)
+        return format_scan_result(result, f"Masscan: {target}")
+
+    @mcp.tool(name="subfinder_scan")
+    def subfinder_scan(domain: str, additional_args: str = "-silent") -> str:
+        """
+        Execute Subfinder for passive subdomain discovery.
+        
+        Args:
+            domain: The target domain to enumerate subdomains
+            additional_args: Additional Subfinder arguments
+            
+        Returns:
+            List of discovered subdomains
+            
+        Examples:
+            - Basic: subfinder_scan("example.com")
+            - Verbose: subfinder_scan("example.com", additional_args="-v")
+            - With sources: subfinder_scan("example.com", additional_args="-sources")
+        """
+        data = {
+            "domain": domain,
+            "additional_args": additional_args
+        }
+        result = kali_client.safe_post("api/tools/subfinder", data)
+        return format_scan_result(result, f"Subfinder: {domain}")
+
+    @mcp.tool(name="searchsploit_search")
+    def searchsploit_search(query: str, additional_args: str = "") -> str:
+        """
+        Search the Exploit Database for exploits matching the query.
+        
+        Args:
+            query: Search term (software name, version, CVE, etc.)
+            additional_args: Additional Searchsploit arguments (e.g., "--json", "--www")
+            
+        Returns:
+            List of matching exploits with paths and descriptions
+            
+        Examples:
+            - Search: searchsploit_search("apache 2.4")
+            - CVE: searchsploit_search("CVE-2021-44228")
+            - JSON: searchsploit_search("wordpress", additional_args="--json")
+        """
+        data = {
+            "query": query,
+            "additional_args": additional_args
+        }
+        result = kali_client.safe_post("api/tools/searchsploit", data)
+        return format_scan_result(result, f"Searchsploit: {query}")
+
+    @mcp.tool(name="whatweb_scan")
+    def whatweb_scan(target: str, aggression: int = 1, additional_args: str = "") -> str:
+        """
+        Execute WhatWeb to identify web technologies and frameworks.
+        
+        Args:
+            target: The target URL to analyze
+            aggression: Aggression level 1-4 (1=stealthy, 4=aggressive)
+            additional_args: Additional WhatWeb arguments
+            
+        Returns:
+            Detected technologies, CMS, frameworks, and versions
+            
+        Examples:
+            - Basic: whatweb_scan("https://example.com")
+            - Aggressive: whatweb_scan("https://example.com", aggression=3)
+            - Verbose: whatweb_scan("https://example.com", additional_args="-v")
+        """
+        data = {
+            "target": target,
+            "aggression": aggression,
+            "additional_args": additional_args
+        }
+        result = kali_client.safe_post("api/tools/whatweb", data)
+        return format_scan_result(result, f"WhatWeb: {target}")
 
     @mcp.tool(name="server_health")
     def server_health() -> Dict[str, Any]:

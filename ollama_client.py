@@ -204,6 +204,111 @@ TOOLS = [
                 "required": []
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "nuclei_scan",
+            "description": "Execute Nuclei vulnerability scanner with template-based detection for CVEs and misconfigurations",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "description": "Target URL or IP (e.g., https://example.com)"
+                    },
+                    "templates": {
+                        "type": "string",
+                        "description": "Template path or tags (e.g., 'cves/', 'exposures/')"
+                    },
+                    "severity": {
+                        "type": "string",
+                        "description": "Severity levels: critical,high,medium,low,info"
+                    }
+                },
+                "required": ["target"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "masscan_scan",
+            "description": "Execute Masscan fast port scanner (faster than nmap for large networks)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "description": "Target IP or CIDR range (e.g., 192.168.1.0/24)"
+                    },
+                    "ports": {
+                        "type": "string",
+                        "description": "Port range (e.g., '80,443,8080' or '1-65535')"
+                    },
+                    "rate": {
+                        "type": "integer",
+                        "description": "Packets per second (default: 1000)"
+                    }
+                },
+                "required": ["target"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "subfinder_scan",
+            "description": "Execute Subfinder for passive subdomain discovery",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "Target domain (e.g., example.com)"
+                    }
+                },
+                "required": ["domain"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "searchsploit_search",
+            "description": "Search Exploit Database for exploits matching software/CVE",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search term (e.g., 'apache 2.4', 'CVE-2021-44228')"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "whatweb_scan",
+            "description": "Execute WhatWeb to identify web technologies, CMS, and frameworks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "description": "Target URL (e.g., https://example.com)"
+                    },
+                    "aggression": {
+                        "type": "integer",
+                        "description": "Aggression level 1-4 (1=stealthy, 4=aggressive)"
+                    }
+                },
+                "required": ["target"]
+            }
+        }
     }
 ]
 
@@ -266,6 +371,26 @@ Available Tools:
                 output += f"{'-'*80}\n\n"
             
             return output
+        
+        elif tool_name == "nuclei_scan":
+            result = kali.post("api/tools/nuclei", arguments)
+            return format_scan_result(result, "Nuclei Scan")
+        
+        elif tool_name == "masscan_scan":
+            result = kali.post("api/tools/masscan", arguments)
+            return format_scan_result(result, "Masscan Scan")
+        
+        elif tool_name == "subfinder_scan":
+            result = kali.post("api/tools/subfinder", arguments)
+            return format_scan_result(result, "Subfinder Scan")
+        
+        elif tool_name == "searchsploit_search":
+            result = kali.post("api/tools/searchsploit", arguments)
+            return format_scan_result(result, "Searchsploit Search")
+        
+        elif tool_name == "whatweb_scan":
+            result = kali.post("api/tools/whatweb", arguments)
+            return format_scan_result(result, "WhatWeb Scan")
         
         else:
             return f"❌ Unknown tool: {tool_name}"
@@ -334,10 +459,15 @@ def chat(user_message: str, model: str, verbose: bool = True) -> str:
 Available tools:
 - server_health: Check if Kali server is running
 - nmap_scan: Network scanning and port detection
+- masscan_scan: Fast port scanner for large networks (faster than nmap)
 - nikto_scan: Web server vulnerability scanning
 - gobuster_scan: Directory and file enumeration
 - sqlmap_scan: SQL injection testing
 - ffuf_scan: Web fuzzing and content discovery
+- nuclei_scan: Modern vulnerability scanner with CVE detection
+- subfinder_scan: Passive subdomain discovery
+- searchsploit_search: Search exploit database
+- whatweb_scan: Web technology and CMS detection
 - get_scan_history: View recent scans (useful after crashes)
 
 When the user asks to scan or test something:
