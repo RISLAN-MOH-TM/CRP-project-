@@ -10,11 +10,13 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 import traceback
 import threading
 from typing import Dict, Any
 from datetime import datetime
 from flask import Flask, request, jsonify
+from functools import wraps
 
 # Configure logging
 logging.basicConfig(
@@ -30,12 +32,61 @@ logger = logging.getLogger(__name__)
 API_PORT = int(os.environ.get("API_PORT", 5000))
 DEBUG_MODE = os.environ.get("DEBUG_MODE", "0").lower() in ("1", "true", "yes", "y")
 COMMAND_TIMEOUT = 180  # 5 minutes default timeout
+API_KEY = os.environ.get("KALI_API_KEY", "kali-research-project-2026")
 
 # Scan logging directory
 SCAN_LOG_DIR = "/opt/scans/logs"
 os.makedirs(SCAN_LOG_DIR, exist_ok=True)
 
 app = Flask(__name__)
+
+# Security decorators
+def require_api_key(f):
+    """Decorator to require API key authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Get API key from header
+        provided_key = request.headers.get('X-API-Key')
+        
+        # Check if API key matches
+        if provided_key != API_KEY:
+            logger.warning(f"Invalid API key attempt from {request.remote_addr}")
+            return jsonify({
+                "error": "Invalid or missing API key",
+                "message": "Please provide a valid X-API-Key header"
+            }), 401
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+def dynamic_rate_limit(tool_name):
+    """Decorator for dynamic rate limiting (placeholder - not fully implemented)"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Simple rate limiting could be added here
+            # For now, just pass through
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def sanitize_arg(arg):
+    """Sanitize command arguments to prevent injection"""
+    if isinstance(arg, str):
+        # Remove potentially dangerous characters
+        dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '<', '>', '\n', '\r']
+        sanitized = str(arg)
+        for char in dangerous_chars:
+            sanitized = sanitized.replace(char, '')
+        return sanitized
+    return str(arg)
+
+def build_safe_command(base_command, args_list):
+    """Build a safe command from base and arguments"""
+    command = base_command
+    for arg in args_list:
+        command += f" {sanitize_arg(arg)}"
+    return command
 
 # Scan logging functions
 def log_scan_request(tool_name: str, params: dict, client_ip: str) -> str:
