@@ -1,0 +1,17 @@
+# Requirements for Ollama + MCP Client
+# Install with: pip install -r requirements_ollama.txt
+
+# Core dependencies (same as main project)
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Ollama Python client
+ollama>=0.1.0
+
+# Optional: For better CLI experience
+rich>=13.0.0  # Pretty terminal output
+colorama>=0.4.6  # Cross-platform colored terminal text
+
+# Note: The main mcp_server.py dependencies are in requirements.txt
+# If you want to use the standalone ollama_client.py, install this file
+# If you're using Cline, you only need the main requirements.txt

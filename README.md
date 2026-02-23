@@ -126,7 +126,9 @@ KALI_SERVER_IP=192.168.1.100
 curl http://192.168.1.100:5000/health
 ```
 
-### Part 3: Claude AI Integration (Optional)
+### Part 3: AI Integration (Choose One)
+
+#### Option A: Claude Desktop ($20/month)
 
 1. **Configure Claude MCP** (`C:\Users\YourName\.config\claude-mcp\config.json`):
 
@@ -156,6 +158,62 @@ curl http://192.168.1.100:5000/health
 "Find hidden directories on https://example.com"
 ```
 
+#### Option B: Cline + Ollama (100% FREE!) ⭐ RECOMMENDED
+
+**Why Cline + Ollama?**
+- ✅ Completely FREE (no monthly costs)
+- ✅ 100% Private (runs locally)
+- ✅ No rate limits
+- ✅ Works offline
+- ✅ Same tool execution as Claude Desktop
+
+**Quick Setup (5 minutes):**
+
+1. **Install Ollama:**
+   - Download: https://ollama.ai/download
+   - Run installer
+   - Open PowerShell:
+   ```powershell
+   ollama pull llama3.1:8b
+   ```
+
+2. **Install Cline in VS Code:**
+   - Open VS Code
+   - Press `Ctrl+Shift+X`
+   - Search "Cline"
+   - Click Install
+
+3. **Configure Cline:**
+   - Press `Ctrl+,` (Settings)
+   - Click `{}` icon (top right)
+   - Add this to settings.json:
+   ```json
+   {
+     "cline.apiProvider": "ollama",
+     "cline.ollamaModelId": "llama3.1:8b",
+     "cline.ollamaBaseUrl": "http://localhost:11434",
+     "cline.mcpServers": {
+       "kali-tools": {
+         "command": "python",
+         "args": [
+           "C:\\path\\to\\PCP-project-\\mcp_server.py",
+           "--server", "http://192.168.1.100:5000"
+         ],
+         "env": {
+           "KALI_API_KEY": "kali-research-project-2026"
+         }
+       }
+     }
+   }
+   ```
+
+4. **Test:**
+   - Press `Ctrl+Shift+P`
+   - Type "Cline: Open"
+   - Ask: "Check Kali server health"
+
+**See [QUICK_START_CLINE_OLLAMA.txt](QUICK_START_CLINE_OLLAMA.txt) for detailed guide!**
+
 ---
 
 ## 📚 Documentation
@@ -163,12 +221,17 @@ curl http://192.168.1.100:5000/health
 | Document | Description |
 |----------|-------------|
 | [README_FIRST.txt](README_FIRST.txt) | Quick start overview - **START HERE!** |
+| [QUICK_START_CLINE_OLLAMA.txt](QUICK_START_CLINE_OLLAMA.txt) | **FREE Alternative to Claude Desktop** ⭐ |
 | [HOWTO.md](information/HOWTO.md) | Simple step-by-step guide |
 | [PROJECT_SETUP.md](information/PROJECT_SETUP.md) | Complete setup for VM architecture |
+| [CLINE_OLLAMA_SETUP.md](information/CLINE_OLLAMA_SETUP.md) | Complete Cline + Ollama setup guide |
+| [ALTERNATIVE_AI_CLIENTS.md](information/ALTERNATIVE_AI_CLIENTS.md) | All AI client options comparison |
 | [SECURITY.md](information/SECURITY.md) | Security features and rate limiting |
 | [DYNAMIC_RATE_LIMITING.md](information/DYNAMIC_RATE_LIMITING.md) | Advanced adaptive rate limiting |
 | [RATE_LIMIT_GUIDE.md](information/RATE_LIMIT_GUIDE.md) | Efficient report generation with rate limits |
 | [METASPLOIT_GUIDE.md](information/METASPLOIT_GUIDE.md) | Complete Metasploit Framework usage guide |
+| [PERSISTENCE_FEATURES.md](information/PERSISTENCE_FEATURES.md) | Automatic logging and crash recovery |
+| [TOOLS_REFERENCE.md](information/TOOLS_REFERENCE.md) | Complete tool reference with examples |
 
 ---
 
