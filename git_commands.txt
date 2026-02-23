@@ -1,0 +1,52 @@
+# Git Commands to Push Code to GitHub
+
+# Step 1: Check current status
+git status
+
+# Step 2: Add all changes
+git add .
+
+# Step 3: Commit with descriptive message
+git commit -m "Add JSON result storage, AI report generation, and integrated analysis tools
+
+Major Features:
+- JSON result storage for all 18 penetration testing tools
+- Results saved for both successful and failed scans
+- AI-powered professional penetration testing report generation
+- Integrated analysis tools into MCP server (analyze_all_results, get_results_for_target, export_results_summary)
+- Claude AI can now analyze results and generate reports directly
+
+Changes:
+- Updated mcp_server.py: Added JSON storage, 3 new MCP analysis tools
+- Updated kali_server.py: Enhanced scan logging
+- Updated README.md: Added JSON results documentation, AI report generation guide
+- Created information/PERSISTENCE_FEATURES.md: Complete JSON storage documentation
+- Created parse_results.py: Standalone analysis script (also integrated into MCP)
+- Created RESULT_STORAGE_UPDATE.md: Detailed change documentation
+- Created INTEGRATION_SUMMARY.md: Analysis tools integration guide
+- Added example JSON files in results/ folder
+
+Benefits:
+- Never lose scan data (automatic JSON storage)
+- Machine-readable format for automation
+- Claude AI generates professional pentest reports
+- Real-time analysis during conversations
+- Easy parsing with Python/PowerShell/jq
+- Database import ready
+- Compliance reporting (OWASP Top 10, CWE)
+
+Version: 2.1.0"
+
+# Step 4: Push to GitHub
+git push origin master
+
+# Alternative if you're on main branch:
+# git push origin main
+
+# If this is your first push or you need to set upstream:
+# git push -u origin master
+
+# If you encounter authentication issues, you may need to:
+# 1. Use Personal Access Token instead of password
+# 2. Or configure SSH keys
+# 3. Or use GitHub CLI: gh auth login

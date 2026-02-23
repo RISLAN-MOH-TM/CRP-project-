@@ -11,16 +11,111 @@ Your MCP server now has **automatic scan logging** and **result persistence** to
 - Logs include: scan ID, tool, parameters, timestamps, status, results
 - Survives crashes, restarts, and network issues
 
-### 2. Automatic Result Saving
-- All scan results automatically saved to `./results/` directory
-- Files named: `{tool}_{target}_{timestamp}.txt`
-- Readable text format
+### 2. Automatic Result Saving (JSON FORMAT!)
+- **ALL scan results automatically saved** to `./results/` directory as JSON files
+- **Saves for BOTH successful AND failed scans**
+- **Stores RAW output** (stdout/stderr) in JSON format
+- Files named: `{tool}_{target}_{timestamp}.json`
+- Includes metadata: success status, return code, timestamps, scan ID
 - Persists even if Claude crashes
+- **Machine readable** - Easy to parse and process
 
 ### 3. Recovery Tools
 - `get_scan_history()` - View recent scans
 - `get_scan_details(scan_id)` - Get full scan information
 - Works immediately after crash/restart
+
+## 📄 JSON Result File Format
+
+Results are now saved as **JSON files** with **raw output** and **metadata**:
+
+**Filename:** `{tool}_{target}_{timestamp}.json`
+
+**Example:** `nmap_192.168.1.100_20260223_143022.json`
+
+```json
+{
+  "tool": "nmap",
+  "target": "192.168.1.100",
+  "timestamp": "20260223_143022",
+  "datetime": "2026-02-23T14:30:22.123456",
+  "success": true,
+  "return_code": 0,
+  "stdout": "Starting Nmap 7.98 ( https://nmap.org ) at 2026-02-23 14:30 EST\nNmap scan report for 192.168.1.100\nHost is up (0.0012s latency).\nPORT     STATE SERVICE    VERSION\n22/tcp   open  ssh        OpenSSH 8.2p1\n80/tcp   open  http       Apache httpd 2.4.41\n443/tcp  open  ssl/https  Apache httpd 2.4.41\n\nNmap done: 1 IP address (1 host up) scanned in 12.34 seconds",
+  "stderr": "",
+  "error": null,
+  "timed_out": false,
+  "partial_results": false,
+  "rate_limited": false,
+  "retry_after": null,
+  "concurrent_limit_reached": false,
+  "scan_id": "nmap_20260223_143022_192_168_1_100",
+  "status_code": null,
+  "parsed_output": null
+}
+```
+
+### Failed Scan Example:
+
+**Filename:** `sqlmap_example.com_20260223_143500.json`
+
+```json
+{
+  "tool": "sqlmap",
+  "target": "https://example.com/login",
+  "timestamp": "20260223_143500",
+  "datetime": "2026-02-23T14:35:00.123456",
+  "success": false,
+  "return_code": 1,
+  "stdout": "[14:35:00] [INFO] testing connection to the target URL\n[14:35:15] [WARNING] target URL is not responding\n[14:35:30] [CRITICAL] unable to connect to the target URL",
+  "stderr": "sqlmap: error: connection timeout\nCheck your network connection and target availability",
+  "error": "Connection timeout after 30 seconds",
+  "timed_out": false,
+  "partial_results": false,
+  "rate_limited": false,
+  "retry_after": null,
+  "concurrent_limit_reached": false,
+  "scan_id": "sqlmap_20260223_143500_192_168_1_50",
+  "status_code": null,
+  "parsed_output": null
+}
+```
+
+### Rate Limited Scan Example:
+
+**Filename:** `nuclei_target.com_20260223_143600.json`
+
+```json
+{
+  "tool": "nuclei",
+  "target": "https://target.com",
+  "timestamp": "20260223_143600",
+  "datetime": "2026-02-23T14:36:00.123456",
+  "success": false,
+  "return_code": null,
+  "stdout": "",
+  "stderr": "",
+  "error": "Rate limit exceeded. Please wait before retrying.",
+  "timed_out": false,
+  "partial_results": false,
+  "rate_limited": true,
+  "retry_after": "60 seconds",
+  "concurrent_limit_reached": false,
+  "scan_id": null,
+  "status_code": 429,
+  "parsed_output": null
+}
+```
+
+### Benefits of JSON Format:
+
+1. ✅ **Easy to parse** - Use `json.load()` in Python
+2. ✅ **Machine readable** - Import into other tools
+3. ✅ **Structured data** - All fields clearly labeled
+4. ✅ **Query with jq** - `jq '.stdout' file.json`
+5. ✅ **Database import** - Load into MongoDB, PostgreSQL, etc.
+6. ✅ **Automation friendly** - Process with scripts
+7. ✅ **Version control** - Git diffs work well with JSON
 
 ## 🚀 Setup Instructions
 
@@ -47,6 +142,76 @@ python3 kali_server.py --ip 0.0.0.0 --port 5000
 
 ## 📖 Usage Examples
 
+### Parse JSON Results with Python:
+
+```python
+import json
+
+# Read a scan result
+with open('results/nmap_192.168.1.100_20260223_143022.json', 'r') as f:
+    scan = json.load(f)
+
+# Access data
+print(f"Tool: {scan['tool']}")
+print(f"Target: {scan['target']}")
+print(f"Success: {scan['success']}")
+print(f"Output:\n{scan['stdout']}")
+
+# Check if scan failed
+if not scan['success']:
+    print(f"Error: {scan['error']}")
+    print(f"Stderr: {scan['stderr']}")
+```
+
+### Query with jq (Linux/Mac):
+
+```bash
+# Get stdout from all nmap scans
+jq '.stdout' results/nmap_*.json
+
+# Find all failed scans
+jq 'select(.success == false)' results/*.json
+
+# Get all targets scanned
+jq '.target' results/*.json
+
+# Find rate-limited scans
+jq 'select(.rate_limited == true)' results/*.json
+
+# Extract specific fields
+jq '{tool: .tool, target: .target, success: .success}' results/*.json
+```
+
+### Process Multiple Results:
+
+```python
+import json
+import glob
+
+# Load all scan results
+results = []
+for filepath in glob.glob('results/*.json'):
+    with open(filepath, 'r') as f:
+        results.append(json.load(f))
+
+# Find all successful scans
+successful = [r for r in results if r['success']]
+print(f"Successful scans: {len(successful)}")
+
+# Find all failed scans
+failed = [r for r in results if not r['success']]
+print(f"Failed scans: {len(failed)}")
+
+# Group by tool
+from collections import defaultdict
+by_tool = defaultdict(list)
+for r in results:
+    by_tool[r['tool']].append(r)
+
+for tool, scans in by_tool.items():
+    print(f"{tool}: {len(scans)} scans")
+```
+
 ### After Claude Crashes:
 
 **1. Check what you were working on:**
@@ -54,84 +219,18 @@ python3 kali_server.py --ip 0.0.0.0 --port 5000
 "Show me the recent scan history"
 ```
 
-**Response:**
-```
-📊 RECENT SCAN HISTORY (5 scans)
-================================================================================
-
-1. ✅ NMAP
-   Scan ID: nmap_20240220_143022_192_168_1_100
-   Started: 2024-02-20T14:30:22
-   Status: completed
-   Target: 192.168.1.100
-   Completed: 2024-02-20T14:32:15
---------------------------------------------------------------------------------
-
-2. ✅ GOBUSTER
-   Scan ID: gobuster_20240220_143300_192_168_1_100
-   Started: 2024-02-20T14:33:00
-   Status: completed
-   URL: https://example.com
-   Completed: 2024-02-20T14:35:45
---------------------------------------------------------------------------------
-
-3. ❌ SQLMAP
-   Scan ID: sqlmap_20240220_143600_192_168_1_100
-   Started: 2024-02-20T14:36:00
-   Status: failed
-   URL: https://example.com/login
---------------------------------------------------------------------------------
-
-💡 Tip: Use 'get_scan_details(scan_id)' to see full results
-```
-
-**2. Get full details of a specific scan:**
-```
-"Get details for scan nmap_20240220_143022_192_168_1_100"
-```
-
-**Response:**
-```
-🔍 SCAN DETAILS: nmap_20240220_143022_192_168_1_100
-================================================================================
-
-Tool: NMAP
-Started: 2024-02-20T14:30:22
-Status: completed
-Completed: 2024-02-20T14:32:15
-
-📋 Parameters:
-   target: 192.168.1.100
-   scan_type: -sV
-   ports: 80,443,8080
-   additional_args: -T4 -Pn
-
-================================================================================
-📊 RESULTS
-================================================================================
-
-Success: ✅ Yes
-Return Code: 0
-
-Output Length: 2547 characters
-Error Length: 0 characters
-
-💡 Full output was saved to the results directory on the MCP server
-```
-
-**3. View saved files:**
+**2. Parse results programmatically:**
 ```powershell
-# On Windows
-Get-ChildItem C:\Users\User\User\Desktop\mcp\results | Sort-Object LastWriteTime -Descending | Select-Object -First 10
-```
-
-**Output:**
-```
-Name                                          LastWriteTime
-----                                          -------------
-nmap_192.168.1.100_20240220_143022.txt       2/20/2024 2:32:15 PM
-gobuster_example.com_20240220_143300.txt     2/20/2024 2:35:45 PM
-sqlmap_example.com_20240220_143600.txt       2/20/2024 2:38:12 PM
+# On Windows with PowerShell
+Get-ChildItem results\*.json | ForEach-Object {
+    $data = Get-Content $_.FullName | ConvertFrom-Json
+    [PSCustomObject]@{
+        Tool = $data.tool
+        Target = $data.target
+        Success = $data.success
+        Timestamp = $data.datetime
+    }
+} | Format-Table
 ```
 
 ## 🔍 How It Works
@@ -149,145 +248,44 @@ sqlmap_example.com_20240220_143600.txt       2/20/2024 2:38:12 PM
    ↓
 5. Kali server updates log with results
    ↓
-6. MCP server receives results
+6. MCP server receives results (success OR failure)
    ↓
-7. MCP server saves formatted output to ./results/{tool}_{target}_{timestamp}.txt
+7. MCP server saves RAW JSON to ./results/{tool}_{target}_{timestamp}.json
    ↓
 8. Claude displays results with file location and scan ID
 ```
 
-### Log File Structure:
-
-```json
-{
-  "scan_id": "nmap_20240220_143022_192_168_1_100",
-  "tool": "nmap",
-  "parameters": {
-    "target": "192.168.1.100",
-    "scan_type": "-sV",
-    "ports": "80,443,8080"
-  },
-  "client_ip": "192.168.1.50",
-  "start_time": "2024-02-20T14:30:22",
-  "end_time": "2024-02-20T14:32:15",
-  "status": "completed",
-  "result": {
-    "success": true,
-    "return_code": 0,
-    "stdout_length": 2547,
-    "stderr_length": 0,
-    "timed_out": false
-  }
-}
-```
-
-## 📊 New MCP Tools
-
-### 1. get_scan_history(limit=20)
-
-**Purpose:** View recent scans to recover context
-
-**Parameters:**
-- `limit` (optional): Number of scans to retrieve (default: 20)
-
-**Example:**
-```
-"Show me the last 10 scans"
-"Get scan history with limit 50"
-```
-
-### 2. get_scan_details(scan_id)
-
-**Purpose:** Get full details of a specific scan
-
-**Parameters:**
-- `scan_id` (required): The scan ID from history
-
-**Example:**
-```
-"Get details for scan nmap_20240220_143022_192_168_1_100"
-"Show me the full results of the last sqlmap scan"
-```
-
-## 🎯 Recovery Scenarios
-
-### Scenario 1: Claude Crashes Mid-Scan
-
-**Before (without persistence):**
-- ❌ Lose all progress
-- ❌ Don't know what was running
-- ❌ Have to start over
-
-**After (with persistence):**
-```
-1. "Show me the recent scan history"
-2. See: "nmap scan on 192.168.1.100 - Status: started"
-3. "Get details for that scan"
-4. Check if it completed or failed
-5. Resume from where you left off
-```
-
-### Scenario 2: Network Timeout
-
-**Before:**
-- ❌ Scan results lost
-- ❌ No way to retrieve
-
-**After:**
-```
-1. Check results directory: ./results/nmap_192.168.1.100_20240220_143022.txt
-2. Or: "Get scan history" and retrieve via scan ID
-3. Full results preserved
-```
-
-### Scenario 3: Multiple Targets Being Scanned
-
-**Before:**
-- ❌ Forget which targets completed
-- ❌ Might scan same target twice
-
-**After:**
-```
-1. "Show me scan history"
-2. See: 
-   - 192.168.1.1 ✅ completed
-   - 192.168.1.2 ✅ completed
-   - 192.168.1.3 ❌ failed
-   - 192.168.1.4 ⏳ in progress
-3. Resume with 192.168.1.3 (retry failed)
-4. Continue with 192.168.1.5 (next target)
-```
-
 ## 💾 Storage Locations
 
-### Kali VM:
+### Kali VM (Logs):
 ```
 /opt/scans/logs/
-├── nmap_20240220_143022_192_168_1_100.json
-├── gobuster_20240220_143300_192_168_1_100.json
-├── sqlmap_20240220_143600_192_168_1_100.json
+├── nmap_20260223_143022_192_168_1_100.json
+├── gobuster_20260223_143300_192_168_1_100.json
+├── sqlmap_20260223_143600_192_168_1_100.json
 └── ...
 ```
 
-### Windows:
+### Windows (Results):
 ```
 C:\Users\User\User\Desktop\mcp\results\
-├── nmap_192.168.1.100_20240220_143022.txt
-├── gobuster_example.com_20240220_143300.txt
-├── sqlmap_example.com_20240220_143600.txt
+├── nmap_192.168.1.100_20260223_143022.json
+├── gobuster_example.com_20260223_143300.json
+├── sqlmap_example.com_20260223_143600.json (saved even if failed!)
+├── nuclei_target.com_20260223_143700.json (rate limited)
 └── ...
 ```
 
 ## 🧹 Maintenance
 
-### Clean Old Logs:
+### Clean Old Results:
 
 ```bash
 # On Kali VM - keep last 30 days
 find /opt/scans/logs -name "*.json" -mtime +30 -delete
 
 # On Windows - keep last 100 files
-Get-ChildItem C:\Users\User\User\Desktop\mcp\results | 
+Get-ChildItem C:\Users\User\User\Desktop\mcp\results\*.json | 
   Sort-Object LastWriteTime -Descending | 
   Select-Object -Skip 100 | 
   Remove-Item
@@ -303,6 +301,38 @@ du -sh /opt/scans/logs
 Get-ChildItem C:\Users\User\User\Desktop\mcp\results | 
   Measure-Object -Property Length -Sum | 
   Select-Object @{Name="Size(MB)";Expression={$_.Sum/1MB}}
+```
+
+### Analyze Results:
+
+```python
+import json
+import glob
+from datetime import datetime
+
+# Load all results
+results = []
+for filepath in glob.glob('results/*.json'):
+    with open(filepath, 'r') as f:
+        results.append(json.load(f))
+
+# Statistics
+total = len(results)
+successful = sum(1 for r in results if r['success'])
+failed = sum(1 for r in results if not r['success'])
+rate_limited = sum(1 for r in results if r.get('rate_limited'))
+
+print(f"Total scans: {total}")
+print(f"Successful: {successful} ({successful/total*100:.1f}%)")
+print(f"Failed: {failed} ({failed/total*100:.1f}%)")
+print(f"Rate limited: {rate_limited}")
+
+# Most scanned targets
+from collections import Counter
+targets = Counter(r['target'] for r in results)
+print("\nTop 10 targets:")
+for target, count in targets.most_common(10):
+    print(f"  {target}: {count} scans")
 ```
 
 ## 🔧 Troubleshooting
@@ -328,45 +358,59 @@ sudo chmod 777 /opt/scans/logs
 New-Item -ItemType Directory -Force -Path "C:\Users\User\User\Desktop\mcp\results"
 ```
 
-### Issue: Can't find scan ID
+### Issue: JSON parsing error
 
-**Cause:** Scan ID format changed or scan very old
+**Cause:** Corrupted JSON file
 
 **Solution:**
-```bash
-# On Kali VM, list all logs
-ls -lht /opt/scans/logs | head -20
+```python
+import json
+
+# Validate JSON file
+try:
+    with open('results/scan.json', 'r') as f:
+        data = json.load(f)
+    print("Valid JSON")
+except json.JSONDecodeError as e:
+    print(f"Invalid JSON: {e}")
 ```
 
 ## 📈 Benefits
 
-**Before Persistence:**
-- ⏱️ Average time lost per crash: 15-30 minutes
-- 😤 Frustration level: High
-- 🔄 Scans repeated: Common
-- 📊 Data retention: None
+**Before JSON Format:**
+- ⏱️ Hard to parse results
+- 😤 Manual text processing
+- 🔄 Can't automate analysis
+- 📊 No structured data
 
-**After Persistence:**
-- ⏱️ Average time lost per crash: 0-2 minutes
-- 😊 Frustration level: Low
-- 🔄 Scans repeated: Rare
-- 📊 Data retention: 100%
+**After JSON Format:**
+- ⏱️ Easy to parse with any language
+- 😊 Automated processing
+- 🔄 Script-friendly
+- 📊 Structured, queryable data
+- ✅ Database import ready
+- ✅ Works with data analysis tools
 
 ## 🎉 Summary
 
 You now have:
 - ✅ Automatic logging of every scan
-- ✅ Automatic saving of all results
+- ✅ Automatic saving of all results (success AND failure)
+- ✅ **JSON format** for easy parsing and automation
+- ✅ Raw stdout/stderr preserved
 - ✅ Recovery tools to retrieve history
 - ✅ Persistent storage that survives crashes
+- ✅ Machine-readable structured data
 - ✅ Never lose work again!
 
 **Test it now:**
 ```
 1. Run a scan: "Scan scanme.nmap.org with nmap"
-2. Check history: "Show me scan history"
-3. Get details: "Get details for the last scan"
-4. View file: Check ./results/ directory
+2. Check results: dir results\*.json
+3. Parse JSON: Get-Content results\nmap_*.json | ConvertFrom-Json
+4. Try failed scan: "Scan invalid-host.com with nmap"
+5. Verify failed scan saved: dir results\*.json
+6. Process with Python/jq/PowerShell
 ```
 
-Your work is now safe! 🛡️
+Your work is now safe and machine-readable! 🛡️📊

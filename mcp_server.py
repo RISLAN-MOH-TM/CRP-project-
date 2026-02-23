@@ -3,11 +3,14 @@
 # This script connect the MCP AI agent to Kali Linux terminal and API Server.
 
 import argparse
+import json
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional
+import glob
+from typing import Any, Dict, Optional, List
 from datetime import datetime
+from collections import Counter, defaultdict
 
 import requests
 from mcp.server.fastmcp import FastMCP
@@ -33,23 +36,131 @@ logger = logging.getLogger(__name__)
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-def save_result_to_file(tool_name: str, target: str, result: str) -> str:
-    """Save scan result to persistent file"""
+def save_result_to_file(tool_name: str, target: str, result: Dict[str, Any]) -> str:
+    """
+    Save scan result to persistent JSON file (raw data for both success and failure)
+    
+    Args:
+        tool_name: Name of the tool that was executed
+        target: Target that was scanned (IP, URL, domain, etc.)
+        result: Result dictionary from kali_client.safe_post()
+        
+    Returns:
+        Filepath where results were saved, or empty string on error
+    """
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         # Sanitize target for filename
-        safe_target = target.replace('/', '_').replace(':', '_').replace('\\', '_')
-        filename = f"{tool_name}_{safe_target}_{timestamp}.txt"
+        safe_target = target.replace('/', '_').replace(':', '_').replace('\\', '_').replace('?', '_').replace('&', '_')
+        filename = f"{tool_name}_{safe_target}_{timestamp}.json"
         filepath = os.path.join(RESULTS_DIR, filename)
         
+        # Prepare JSON data structure
+        json_data = {
+            "tool": tool_name,
+            "target": target,
+            "timestamp": timestamp,
+            "datetime": datetime.now().isoformat(),
+            "success": result.get('success', False),
+            "return_code": result.get('return_code', None),
+            "stdout": result.get('stdout', ''),
+            "stderr": result.get('stderr', ''),
+            "error": result.get('error', None),
+            "timed_out": result.get('timed_out', False),
+            "partial_results": result.get('partial_results', False),
+            "rate_limited": result.get('rate_limited', False),
+            "retry_after": result.get('retry_after', None),
+            "concurrent_limit_reached": result.get('concurrent_limit_reached', False),
+            "scan_id": result.get('scan_id', None),
+            "status_code": result.get('status_code', None),
+            "parsed_output": result.get('parsed_output', None)
+        }
+        
+        # Write JSON file with pretty formatting
         with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(result)
+            json.dump(json_data, f, indent=2, ensure_ascii=False)
         
         logger.info(f"Results saved to: {filepath}")
         return filepath
     except Exception as e:
         logger.error(f"Error saving results to file: {str(e)}")
         return ""
+
+def load_all_results(results_dir: str = RESULTS_DIR) -> List[Dict[str, Any]]:
+    """Load all JSON result files from the results directory"""
+    results = []
+    try:
+        for filepath in glob.glob(os.path.join(results_dir, '*.json')):
+            # Skip example files
+            if 'EXAMPLE_' in os.path.basename(filepath):
+                continue
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    results.append(json.load(f))
+            except Exception as e:
+                logger.error(f"Error loading {filepath}: {e}")
+    except Exception as e:
+        logger.error(f"Error reading results directory: {e}")
+    return results
+
+def analyze_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Analyze scan results and return statistics"""
+    if not results:
+        return {
+            "total": 0,
+            "successful": 0,
+            "failed": 0,
+            "rate_limited": 0,
+            "timed_out": 0,
+            "by_tool": {},
+            "top_targets": [],
+            "failed_scans": []
+        }
+    
+    total = len(results)
+    successful = sum(1 for r in results if r.get('success'))
+    failed = sum(1 for r in results if not r.get('success'))
+    rate_limited = sum(1 for r in results if r.get('rate_limited'))
+    timed_out = sum(1 for r in results if r.get('timed_out'))
+    
+    # Group by tool
+    by_tool = defaultdict(lambda: {'total': 0, 'success': 0, 'failed': 0})
+    for r in results:
+        tool = r.get('tool', 'unknown')
+        by_tool[tool]['total'] += 1
+        if r.get('success'):
+            by_tool[tool]['success'] += 1
+        else:
+            by_tool[tool]['failed'] += 1
+    
+    # Top targets
+    targets = Counter(r.get('target', 'unknown') for r in results)
+    top_targets = [{"target": t, "count": c} for t, c in targets.most_common(10)]
+    
+    # Failed scans
+    failed_scans = [
+        {
+            "tool": r.get('tool'),
+            "target": r.get('target'),
+            "datetime": r.get('datetime'),
+            "error": r.get('error', 'Unknown error'),
+            "stderr": r.get('stderr', '')[:200]  # Limit stderr length
+        }
+        for r in results if not r.get('success')
+    ]
+    
+    return {
+        "total": total,
+        "successful": successful,
+        "failed": failed,
+        "rate_limited": rate_limited,
+        "timed_out": timed_out,
+        "success_rate": f"{(successful/total*100):.1f}%" if total > 0 else "0%",
+        "by_tool": dict(by_tool),
+        "top_targets": top_targets,
+        "failed_scans": failed_scans[:20]  # Limit to 20 most recent
+    }
+
 # Default configuration
 DEFAULT_KALI_SERVER = "http://localhost:5000"  # Change to your Kali VM IP
 DEFAULT_REQUEST_TIMEOUT = 1800  # 30 minutes default timeout for API requests
@@ -298,10 +409,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/nmap", data)
-        formatted = format_scan_result(result, f"Nmap Scan: {target}")
         
-        # Save to file
-        filepath = save_result_to_file("nmap", target, formatted)
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("nmap", target, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Nmap Scan: {target}")
         
         # Add file location to result
         if filepath:
@@ -335,7 +448,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "wordlist": wordlist,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/gobuster", data)
+        result = kali_client.safe_post("api/tools/gobuster", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("gobuster", url, result)
+        
+        return result
 
     @mcp.tool(name="feroxbuster_scan")
     def feroxbuster_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", threads: int = 50, max_results: int = 200, additional_args: str = "") -> Dict[str, Any]:
@@ -359,7 +477,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "max_results": max_results,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/feroxbuster", data)
+        result = kali_client.safe_post("api/tools/feroxbuster", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("feroxbuster", url, result)
+        
+        return result
 
     @mcp.tool(name="nikto_scan")
     def nikto_scan(target: str, additional_args: str = "") -> Dict[str, Any]:
@@ -377,7 +500,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "target": target,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/nikto", data)
+        result = kali_client.safe_post("api/tools/nikto", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("nikto", target, result)
+        
+        return result
 
     @mcp.tool(name="sqlmap_scan")
     def sqlmap_scan(url: str, data: str = "", additional_args: str = "") -> Dict[str, Any]:
@@ -397,7 +525,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "data": data,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/sqlmap", post_data)
+        result = kali_client.safe_post("api/tools/sqlmap", post_data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("sqlmap", url, result)
+        
+        return result
 
     @mcp.tool(name="metasploit_run")
     def metasploit_run(module: str, options: Dict[str, Any] = {}) -> str:
@@ -420,7 +553,21 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "options": options
         }
         result = kali_client.safe_post("api/tools/metasploit", data)
-        return format_scan_result(result, f"Metasploit: {module}")
+        
+        # Extract target for filename
+        target = options.get("RHOSTS", options.get("RHOST", module.split('/')[-1]))
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("metasploit", target, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Metasploit: {module}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="hydra_attack")
     def hydra_attack(
@@ -456,7 +603,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "password_file": password_file,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/hydra", data)
+        result = kali_client.safe_post("api/tools/hydra", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("hydra", f"{target}_{service}", result)
+        
+        return result
 
     @mcp.tool(name="john_crack")
     def john_crack(
@@ -483,7 +635,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "format": format_type,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/john", data)
+        result = kali_client.safe_post("api/tools/john", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("john", hash_file.split('/')[-1], result)
+        
+        return result
 
     @mcp.tool(name="wpscan_analyze")
     def wpscan_analyze(url: str, additional_args: str = "") -> Dict[str, Any]:
@@ -501,7 +658,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "url": url,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/wpscan", data)
+        result = kali_client.safe_post("api/tools/wpscan", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("wpscan", url, result)
+        
+        return result
 
     @mcp.tool(name="enum4linux_ng_scan")
     def enum4linux_ng_scan(target: str, additional_args: str = "-A") -> Dict[str, Any]:
@@ -519,7 +681,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "target": target,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/enum4linux-ng", data)
+        result = kali_client.safe_post("api/tools/enum4linux-ng", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("enum4linux-ng", target, result)
+        
+        return result
 
     @mcp.tool(name="ffuf_scan")
     def ffuf_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", mode: str = "dir", max_results: int = 100, additional_args: str = "") -> Dict[str, Any]:
@@ -543,7 +710,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "max_results": max_results,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/ffuf", data)
+        result = kali_client.safe_post("api/tools/ffuf", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("ffuf", url, result)
+        
+        return result
 
     @mcp.tool(name="amass_scan")
     def amass_scan(domain: str, mode: str = "enum", additional_args: str = "") -> Dict[str, Any]:
@@ -563,7 +735,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "mode": mode,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/amass", data)
+        result = kali_client.safe_post("api/tools/amass", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("amass", domain, result)
+        
+        return result
 
     @mcp.tool(name="hashcat_crack")
     def hashcat_crack(
@@ -593,7 +770,12 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "attack_mode": attack_mode,
             "additional_args": additional_args
         }
-        return kali_client.safe_post("api/tools/hashcat", data)
+        result = kali_client.safe_post("api/tools/hashcat", data)
+        
+        # Save raw result to file (for both success and failure)
+        save_result_to_file("hashcat", hash_file.split('/')[-1], result)
+        
+        return result
 
     @mcp.tool(name="nuclei_scan")
     def nuclei_scan(target: str, templates: str = "", severity: str = "critical,high,medium", additional_args: str = "") -> str:
@@ -621,7 +803,18 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/nuclei", data)
-        return format_scan_result(result, f"Nuclei: {target}")
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("nuclei", target, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Nuclei: {target}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="masscan_scan")
     def masscan_scan(target: str, ports: str = "1-65535", rate: int = 1000, additional_args: str = "") -> str:
@@ -649,7 +842,18 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/masscan", data)
-        return format_scan_result(result, f"Masscan: {target}")
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("masscan", target, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Masscan: {target}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="subfinder_scan")
     def subfinder_scan(domain: str, additional_args: str = "-silent") -> str:
@@ -673,7 +877,18 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/subfinder", data)
-        return format_scan_result(result, f"Subfinder: {domain}")
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("subfinder", domain, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Subfinder: {domain}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="searchsploit_search")
     def searchsploit_search(query: str, additional_args: str = "") -> str:
@@ -697,7 +912,18 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/searchsploit", data)
-        return format_scan_result(result, f"Searchsploit: {query}")
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("searchsploit", query, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"Searchsploit: {query}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="whatweb_scan")
     def whatweb_scan(target: str, aggression: int = 1, additional_args: str = "") -> str:
@@ -723,7 +949,18 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "additional_args": additional_args
         }
         result = kali_client.safe_post("api/tools/whatweb", data)
-        return format_scan_result(result, f"WhatWeb: {target}")
+        
+        # Save raw result to file (for both success and failure)
+        filepath = save_result_to_file("whatweb", target, result)
+        
+        # Format result for display
+        formatted = format_scan_result(result, f"WhatWeb: {target}")
+        
+        # Add file location to result
+        if filepath:
+            formatted += f"\n📁 Results saved to: {filepath}\n"
+        
+        return formatted
 
     @mcp.tool(name="server_health")
     def server_health() -> Dict[str, Any]:
@@ -842,6 +1079,139 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             report += "\n💡 Full output was saved to the results directory on the MCP server\n"
         
         return report
+    
+    @mcp.tool(name="analyze_all_results")
+    def analyze_all_results() -> str:
+        """
+        Analyze all scan results in the results folder and provide statistics.
+        
+        Returns:
+            Comprehensive analysis including success rates, tool usage, top targets, and failed scans
+        """
+        results = load_all_results()
+        
+        if not results:
+            return "📋 No scan results found in the results folder."
+        
+        analysis = analyze_results(results)
+        
+        report = f"\n{'='*80}\n📊 SCAN RESULTS ANALYSIS\n{'='*80}\n\n"
+        
+        # Summary
+        report += "📈 SUMMARY\n"
+        report += f"{'─'*80}\n"
+        report += f"Total scans: {analysis['total']}\n"
+        report += f"Successful: {analysis['successful']} ({analysis['success_rate']})\n"
+        report += f"Failed: {analysis['failed']}\n"
+        report += f"Rate limited: {analysis['rate_limited']}\n"
+        report += f"Timed out: {analysis['timed_out']}\n\n"
+        
+        # By tool
+        report += "🔧 SCANS BY TOOL\n"
+        report += f"{'─'*80}\n"
+        for tool, stats in sorted(analysis['by_tool'].items()):
+            report += f"{tool:20s}: {stats['total']:3d} total, {stats['success']:3d} success, {stats['failed']:3d} failed\n"
+        report += "\n"
+        
+        # Top targets
+        if analysis['top_targets']:
+            report += "🎯 TOP 10 TARGETS\n"
+            report += f"{'─'*80}\n"
+            for item in analysis['top_targets']:
+                report += f"{item['target']:50s}: {item['count']:3d} scans\n"
+            report += "\n"
+        
+        # Failed scans
+        if analysis['failed_scans']:
+            report += f"❌ FAILED SCANS ({len(analysis['failed_scans'])} shown)\n"
+            report += f"{'─'*80}\n"
+            for scan in analysis['failed_scans']:
+                report += f"Tool: {scan['tool']}\n"
+                report += f"Target: {scan['target']}\n"
+                report += f"Time: {scan['datetime']}\n"
+                report += f"Error: {scan['error']}\n"
+                if scan['stderr']:
+                    report += f"Stderr: {scan['stderr']}...\n"
+                report += f"{'─'*80}\n"
+        
+        report += f"\n{'='*80}\n"
+        report += "💡 Use this analysis to generate professional penetration testing reports\n"
+        report += "💡 All raw data is available in JSON format in the results/ folder\n"
+        report += f"{'='*80}\n"
+        
+        return report
+    
+    @mcp.tool(name="get_results_for_target")
+    def get_results_for_target(target: str) -> str:
+        """
+        Get all scan results for a specific target.
+        
+        Args:
+            target: The target IP, URL, or domain to search for
+            
+        Returns:
+            All scan results for the specified target
+        """
+        results = load_all_results()
+        
+        # Filter by target (partial match)
+        target_results = [r for r in results if target.lower() in r.get('target', '').lower()]
+        
+        if not target_results:
+            return f"📋 No scan results found for target: {target}"
+        
+        report = f"\n{'='*80}\n🎯 SCAN RESULTS FOR: {target}\n{'='*80}\n\n"
+        report += f"Found {len(target_results)} scan(s)\n\n"
+        
+        for i, result in enumerate(target_results, 1):
+            status_icon = "✅" if result.get('success') else "❌"
+            report += f"{i}. {status_icon} {result['tool'].upper()}\n"
+            report += f"   Time: {result.get('datetime', 'Unknown')}\n"
+            report += f"   Success: {result.get('success', False)}\n"
+            
+            if not result.get('success'):
+                report += f"   Error: {result.get('error', 'Unknown error')}\n"
+            
+            if result.get('scan_id'):
+                report += f"   Scan ID: {result['scan_id']}\n"
+            
+            # Show brief output preview
+            stdout = result.get('stdout', '')
+            if stdout:
+                preview = stdout[:200].replace('\n', ' ')
+                report += f"   Output: {preview}...\n"
+            
+            report += f"{'─'*80}\n\n"
+        
+        report += "💡 Full results are available in the results/ folder as JSON files\n"
+        return report
+    
+    @mcp.tool(name="export_results_summary")
+    def export_results_summary(output_file: str = "scan_summary.json") -> str:
+        """
+        Export a summary of all scan results to a JSON file.
+        
+        Args:
+            output_file: Output filename (default: scan_summary.json)
+            
+        Returns:
+            Status message with file location
+        """
+        try:
+            results = load_all_results()
+            analysis = analyze_results(results)
+            
+            # Add timestamp
+            analysis['generated_at'] = datetime.now().isoformat()
+            analysis['total_results_files'] = len(results)
+            
+            output_path = os.path.join(RESULTS_DIR, output_file)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(analysis, f, indent=2, ensure_ascii=False)
+            
+            return f"✅ Summary exported to: {output_path}\n\nContains:\n- Statistics\n- Tool usage\n- Top targets\n- Failed scans\n\nUse this file for report generation or further analysis."
+        except Exception as e:
+            return f"❌ Error exporting summary: {str(e)}"
 
     return mcp
 

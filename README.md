@@ -83,9 +83,9 @@ An **AI-powered automated system** that:
 ## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Windows Host                             │
-│                                                                   │
+┌────────────────────────────────────────────────────────────────┐
+│                         Windows Host                           │
+│                                                                │
 │  ┌──────────────────┐         ┌──────────────────────────┐     │
 │  │   AI Client      │         │   MCP Server             │     │
 │  │  (Claude/Cline)  │◄───────►│   (mcp_server.py)        │     │
@@ -93,14 +93,14 @@ An **AI-powered automated system** that:
 │  │  - Analysis      │Protocol │   - Result formatting    │     │
 │  │  - Reports       │         │   - Scan history         │     │
 │  └──────────────────┘         └──────────┬───────────────┘     │
-│                                           │                      │
-│                                           │ HTTP REST API        │
-│                                           │ (Port 5000)          │
-│                                           │                      │
+│                                           │                    │
+│                                           │ HTTP REST API      │
+│                                           │ (Port 5000)        │
+│                                           │                    │
 │  ┌────────────────────────────────────────▼──────────────────┐ │
-│  │              VMware Workstation Pro                        │ │
+│  │              VMware Workstation Pro                       │ │
 │  │  ┌──────────────────────────────────────────────────────┐ │ │
-│  │  │              Kali Linux VM                            │ │ │
+│  │  │              Kali Linux VM                           │ │ │
 │  │  │  ┌────────────────────────────────────────────────┐  │ │ │
 │  │  │  │         Flask API Server                       │  │ │ │
 │  │  │  │         (kali_server.py)                       │  │ │ │
@@ -125,8 +125,8 @@ An **AI-powered automated system** that:
 │  │  │  │         /opt/scans/logs/                       │  │ │ │
 │  │  │  └────────────────────────────────────────────────┘  │ │ │
 │  │  └──────────────────────────────────────────────────────┘ │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+│  └───────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Description
@@ -179,12 +179,16 @@ An **AI-powered automated system** that:
 - **CVSS Scoring:** Industry-standard vulnerability ratings
 - **Remediation Steps:** Actionable fix recommendations
 - **Compliance Mapping:** OWASP Top 10, CWE references
+- **JSON Results:** All scan results saved as machine-readable JSON
+- **AI-Generated Reports:** Claude AI analyzes JSON and creates professional reports
 
 #### 4. Persistence & Recovery
 - **Automatic Logging:** All scans saved to `/opt/scans/logs/`
+- **JSON Results:** All results saved to `./results/` as JSON files
 - **Crash Recovery:** Resume interrupted scans
 - **Scan History:** Review past assessments
 - **Result Archival:** Long-term storage of findings
+- **Machine-Readable:** Easy to parse and automate
 
 #### 5. Security Controls
 - **API Key Authentication:** Secure access control
@@ -405,47 +409,6 @@ curl http://192.168.1.100:5000/health
 
 3. **Restart Claude Desktop**
 
-#### Option B: Cline + OpenRouter (FREE)
-
-1. **Install VS Code:**
-   - Download from: https://code.visualstudio.com/
-
-2. **Install Cline Extension:**
-   - Press `Ctrl+Shift+X`
-   - Search: "Cline"
-   - Click Install
-
-3. **Configure Cline:**
-   - Press `Ctrl+,` (Settings)
-   - Click `{}` icon (top right)
-   - Add to `settings.json`:
-   ```json
-   {
-     "cline.mcpServers": {
-       "kali-tools": {
-         "command": "python",
-         "args": [
-           "C:\\path\\to\\CRP-project-\\mcp_server.py",
-           "--server", "http://192.168.1.100:5000"
-         ],
-         "env": {
-           "KALI_API_KEY": "kali-research-project-2026"
-         }
-       }
-     }
-   }
-   ```
-
-4. **Get OpenRouter API Key:**
-   - Visit: https://openrouter.ai/
-   - Sign up (free tier available)
-   - Copy API key
-
-5. **Configure in Cline:**
-   - Open Cline
-   - Select "OpenRouter" as provider
-   - Enter API key
-   - Choose model: `google/gemini-2.0-flash-exp:free`
 
 ### Step 4: Verification
 
@@ -529,7 +492,117 @@ python mcp_server.py --server http://192.168.1.100:5000 --debug
 - Remediation steps
 - Compliance mapping
 
+#### 6. AI-Generated Penetration Testing Report
+```
+"Analyze all scan results in the results folder and generate a professional penetration testing report with:
+- Executive summary
+- Methodology
+- Findings with CVSS scores
+- Risk assessment
+- Remediation recommendations
+- Compliance mapping (OWASP Top 10)
+- Export as markdown"
+```
+
+**Expected Output:**
+- Professional pentest report in markdown format
+- Can be converted to PDF
+- Includes all scan findings
+- Prioritized by severity
+- Ready for client delivery
+
 ### Advanced Usage
+
+#### AI-Powered Report Generation
+
+Claude AI can analyze all JSON results and generate professional penetration testing reports:
+
+**Step 1: Run Scans**
+```
+"Scan 192.168.1.100 with nmap, nikto, and nuclei"
+```
+
+**Step 2: Generate Report**
+```
+"Analyze all scan results in the results folder and create a professional penetration testing report including:
+
+1. Executive Summary
+   - Overview of assessment
+   - Key findings summary
+   - Risk rating
+
+2. Methodology
+   - Tools used
+   - Scope of testing
+   - Testing approach
+
+3. Detailed Findings
+   - Each vulnerability with:
+     * Title and description
+     * CVSS score and severity
+     * Affected systems
+     * Proof of concept
+     * Impact analysis
+     * Remediation steps
+
+4. Risk Assessment Matrix
+   - Critical: [count]
+   - High: [count]
+   - Medium: [count]
+   - Low: [count]
+
+5. Compliance Mapping
+   - OWASP Top 10
+   - CWE references
+
+6. Recommendations
+   - Prioritized action items
+   - Quick wins
+   - Long-term improvements
+
+Format as professional markdown suitable for client delivery."
+```
+
+**Step 3: Export Report**
+The AI will generate a complete markdown report that can be:
+- Saved as `pentest_report_YYYYMMDD.md`
+- Converted to PDF using pandoc
+- Shared with stakeholders
+- Included in compliance documentation
+
+**Example Report Structure:**
+```markdown
+# Penetration Testing Report
+## Target: 192.168.1.100
+## Date: February 23, 2026
+
+### Executive Summary
+A comprehensive security assessment was conducted...
+
+### Findings
+
+#### CRITICAL: SQL Injection in Login Form
+- **CVSS Score:** 9.8
+- **Affected URL:** https://example.com/login
+- **Description:** The login form is vulnerable to SQL injection...
+- **Proof of Concept:** ' OR '1'='1
+- **Impact:** Complete database compromise
+- **Remediation:** Use parameterized queries...
+
+[... more findings ...]
+
+### Risk Assessment
+- Critical: 2 findings
+- High: 5 findings
+- Medium: 8 findings
+- Low: 3 findings
+
+### Recommendations
+1. Immediately patch SQL injection vulnerabilities
+2. Update Apache to latest version
+3. Implement WAF rules
+...
+```
 
 #### Multi-Target Scanning
 ```
@@ -654,6 +727,174 @@ python mcp_server.py --server http://192.168.1.100:5000 --debug
 
 ## 📊 Results & Analysis
 
+### AI-Powered Report Generation
+
+**Yes! Claude AI can generate professional penetration testing reports from JSON results.**
+
+#### How It Works:
+
+1. **Scan Execution:** All tools save results as JSON files in `./results/`
+2. **Data Collection:** Claude reads and parses all JSON files
+3. **Analysis:** AI analyzes findings, assigns severity, identifies patterns
+4. **Report Generation:** Creates professional markdown/PDF report
+
+#### Report Features:
+
+✅ **Executive Summary** - High-level overview for management
+✅ **Methodology** - Tools used and testing approach  
+✅ **Detailed Findings** - Each vulnerability with CVSS scores
+✅ **Risk Assessment** - Prioritized by severity (Critical/High/Medium/Low)
+✅ **Proof of Concept** - Evidence and reproduction steps
+✅ **Impact Analysis** - Business impact of each finding
+✅ **Remediation Steps** - Specific fix recommendations
+✅ **Compliance Mapping** - OWASP Top 10, CWE references
+✅ **Timeline** - When vulnerabilities were discovered
+✅ **Appendix** - Raw scan outputs and technical details
+
+#### Example Prompt for Report Generation:
+
+```
+"Analyze all JSON files in the results folder and generate a professional 
+penetration testing report for client delivery. Include:
+
+1. Executive Summary with risk rating
+2. Methodology section
+3. All findings with CVSS scores
+4. Risk assessment matrix
+5. Detailed remediation recommendations
+6. OWASP Top 10 mapping
+7. Appendix with raw data
+
+Format as professional markdown suitable for PDF conversion."
+```
+
+#### Sample Report Output:
+
+```markdown
+# Penetration Testing Report
+**Client:** Example Corp  
+**Target:** 192.168.1.100  
+**Date:** February 23, 2026  
+**Tester:** Automated Security Assessment System
+
+## Executive Summary
+
+A comprehensive security assessment identified **15 vulnerabilities** across 
+the target system, including **2 critical** and **5 high-severity** issues 
+requiring immediate attention.
+
+**Overall Risk Rating:** HIGH
+
+### Key Findings:
+- SQL Injection in login form (CRITICAL)
+- Outdated Apache version with known CVEs (CRITICAL)
+- Missing security headers (HIGH)
+- Directory listing enabled (MEDIUM)
+
+## Methodology
+
+### Scope
+- Target: 192.168.1.100
+- Testing Period: February 23, 2026
+- Testing Type: Black-box assessment
+
+### Tools Used
+- Nmap 7.98 - Port scanning
+- Nikto 2.5.0 - Web vulnerability scanning
+- Nuclei 3.1.0 - CVE detection
+- SQLmap 1.7 - SQL injection testing
+
+## Detailed Findings
+
+### 1. SQL Injection in Login Form
+**Severity:** CRITICAL  
+**CVSS Score:** 9.8 (Critical)  
+**CWE:** CWE-89  
+**OWASP:** A03:2021 - Injection
+
+**Description:**  
+The login form at /login.php is vulnerable to SQL injection attacks...
+
+**Proof of Concept:**
+```sql
+Username: admin' OR '1'='1'--
+Password: anything
+```
+
+**Impact:**  
+- Complete database compromise
+- Unauthorized access to all user accounts
+- Data exfiltration possible
+
+**Remediation:**
+1. Use parameterized queries/prepared statements
+2. Implement input validation
+3. Apply principle of least privilege to database user
+4. Deploy WAF rules
+
+**References:**
+- https://owasp.org/www-community/attacks/SQL_Injection
+- CVE-2023-XXXXX
+
+---
+
+[... more findings ...]
+
+## Risk Assessment Matrix
+
+| Severity | Count | Findings |
+|----------|-------|----------|
+| Critical | 2 | SQL Injection, Outdated Apache |
+| High | 5 | XSS, CSRF, Missing Headers, etc. |
+| Medium | 6 | Directory Listing, Info Disclosure, etc. |
+| Low | 2 | Banner Disclosure, etc. |
+
+## Recommendations
+
+### Immediate Actions (Critical/High)
+1. **Patch SQL Injection** - Deploy fix within 24 hours
+2. **Update Apache** - Upgrade to 2.4.58 immediately
+3. **Implement Security Headers** - Add CSP, HSTS, X-Frame-Options
+
+### Short-term (1-2 weeks)
+4. Disable directory listing
+5. Implement rate limiting
+6. Deploy WAF
+
+### Long-term (1-3 months)
+7. Security awareness training
+8. Regular vulnerability scanning
+9. Penetration testing quarterly
+
+## Compliance Mapping
+
+### OWASP Top 10 2021
+- A03:2021 - Injection (SQL Injection found)
+- A05:2021 - Security Misconfiguration (Multiple issues)
+- A06:2021 - Vulnerable Components (Outdated Apache)
+
+### CWE Coverage
+- CWE-89: SQL Injection
+- CWE-79: Cross-site Scripting
+- CWE-352: CSRF
+
+## Appendix
+
+### A. Scan Timeline
+- 14:30 - Nmap port scan completed
+- 14:45 - Nikto web scan completed
+- 15:00 - Nuclei CVE scan completed
+- 15:30 - SQLmap injection testing completed
+
+### B. Raw Scan Data
+See attached JSON files in results/ directory for complete technical details.
+
+---
+**Report Generated:** February 23, 2026  
+**Generated By:** Automated Penetration Testing System with Claude AI  
+**Confidentiality:** CONFIDENTIAL - For Client Use Only
+```
+
 ### Performance Metrics
 
 | Metric | Manual Testing | Automated System | Improvement |
@@ -759,6 +1000,7 @@ python mcp_server.py --server http://192.168.1.100:5000 --debug
 | [SECURITY.md](information/SECURITY.md) | Security features |
 | [RATE_LIMIT_GUIDE.md](information/RATE_LIMIT_GUIDE.md) | Rate limiting guide |
 | [METASPLOIT_GUIDE.md](information/METASPLOIT_GUIDE.md) | Metasploit usage |
+| [PERSISTENCE_FEATURES.md](information/PERSISTENCE_FEATURES.md) | JSON results & crash recovery |
 
 ### Research Documentation
 | Document | Description |
@@ -766,6 +1008,8 @@ python mcp_server.py --server http://192.168.1.100:5000 --debug
 | [TOOLS_ANALYSIS_AND_RECOMMENDATIONS.md](information/TOOLS_ANALYSIS_AND_RECOMMENDATIONS.md) | Tool analysis |
 | [NEW_TOOLS_INSTALLATION.md](information/NEW_TOOLS_INSTALLATION.md) | Installation guide |
 | [PERSISTENCE_FEATURES.md](information/PERSISTENCE_FEATURES.md) | Crash recovery |
+| [RESULT_STORAGE_UPDATE.md](RESULT_STORAGE_UPDATE.md) | JSON storage implementation |
+| [parse_results.py](parse_results.py) | Python script for result analysis |
 
 ---
 
@@ -779,8 +1023,9 @@ python mcp_server.py --server http://192.168.1.100:5000 --debug
 - Contact: [GitHub](https://github.com/RISLAN-MOH-TM)
 
 **Academic Supervisor:**
-- [Supervisor Name]
-- Institution: [University Name]
+- [Supervisor Name: Mr. MIM Mohamed Nismy]
+- [Assessor Name: Mrs. ALF Sajeetha ]
+- Institution: [BCAS Campus]
 - Department: Computer Science / Cybersecurity
 
 **Special Thanks:**
@@ -831,6 +1076,190 @@ Unauthorized access to computer systems is illegal and may result in criminal pr
 
 ---
 
+## 📁 JSON Results Storage
+
+### Overview
+
+All scan results are automatically saved as JSON files in the `./results/` directory for easy parsing and automation.
+
+### File Format
+
+**Filename Pattern:** `{tool}_{target}_{timestamp}.json`
+
+**Examples:**
+- `nmap_192.168.1.100_20260223_143022.json`
+- `sqlmap_example.com_20260223_143500.json`
+- `nuclei_target.com_20260223_143600.json`
+
+### JSON Structure
+
+Each result file contains:
+
+```json
+{
+  "tool": "nmap",
+  "target": "192.168.1.100",
+  "timestamp": "20260223_143022",
+  "datetime": "2026-02-23T14:30:22.123456",
+  "success": true,
+  "return_code": 0,
+  "stdout": "raw output here...",
+  "stderr": "raw errors here...",
+  "error": null,
+  "timed_out": false,
+  "partial_results": false,
+  "rate_limited": false,
+  "retry_after": null,
+  "concurrent_limit_reached": false,
+  "scan_id": "nmap_20260223_143022_192_168_1_100",
+  "status_code": null,
+  "parsed_output": null
+}
+```
+
+### Parsing Results
+
+#### PowerShell (Windows)
+
+```powershell
+# List all results
+Get-ChildItem results\*.json | Sort-Object LastWriteTime -Descending
+
+# Parse a specific result
+$data = Get-Content results\nmap_*.json | ConvertFrom-Json
+Write-Host "Tool: $($data.tool)"
+Write-Host "Target: $($data.target)"
+Write-Host "Success: $($data.success)"
+Write-Host "Output: $($data.stdout)"
+
+# Find all failed scans
+Get-ChildItem results\*.json | ForEach-Object {
+    $data = Get-Content $_.FullName | ConvertFrom-Json
+    if (-not $data.success) {
+        [PSCustomObject]@{
+            File = $_.Name
+            Tool = $data.tool
+            Target = $data.target
+            Error = $data.error
+        }
+    }
+} | Format-Table
+```
+
+#### Python
+
+```python
+import json
+import glob
+
+# Load all results
+for filepath in glob.glob('results/*.json'):
+    with open(filepath, 'r') as f:
+        scan = json.load(f)
+    
+    print(f"Tool: {scan['tool']}")
+    print(f"Target: {scan['target']}")
+    print(f"Success: {scan['success']}")
+    if not scan['success']:
+        print(f"Error: {scan['error']}")
+    print("-" * 80)
+
+# Or use the provided script
+# python parse_results.py
+```
+
+#### jq (Linux/Mac)
+
+```bash
+# Get all successful scans
+jq 'select(.success == true)' results/*.json
+
+# Get stdout from specific scan
+jq '.stdout' results/nmap_192.168.1.100_*.json
+
+# Find all rate-limited scans
+jq 'select(.rate_limited == true)' results/*.json
+
+# Extract specific fields
+jq '{tool: .tool, target: .target, success: .success}' results/*.json
+
+# Count scans by tool
+jq -r '.tool' results/*.json | sort | uniq -c
+```
+
+### Automated Analysis
+
+**Option 1: Use MCP Tools (Recommended)**
+
+Claude AI can analyze results directly using integrated tools:
+
+```
+"Analyze all scan results and show me statistics"
+```
+
+**Available MCP Tools:**
+- `analyze_all_results()` - Comprehensive statistics and analysis
+- `get_results_for_target(target)` - All scans for specific target
+- `export_results_summary()` - Export summary to JSON file
+
+**Option 2: Use Standalone Script**
+
+Use the provided `parse_results.py` script:
+
+```bash
+python parse_results.py
+```
+
+**Output:**
+- Summary statistics (total, successful, failed, rate-limited)
+- Scans grouped by tool
+- Top 10 most scanned targets
+- Details of all failed scans
+- CSV export for further analysis
+
+### Benefits of JSON Format
+
+✅ **Machine-readable** - Easy to parse with any programming language  
+✅ **Structured data** - All fields clearly labeled  
+✅ **Automation friendly** - Perfect for CI/CD pipelines  
+✅ **Database import** - Load into MongoDB, PostgreSQL, etc.  
+✅ **Query with jq** - Powerful command-line JSON processor  
+✅ **Version control** - Git diffs work well with JSON  
+✅ **AI-ready** - Claude can analyze and generate reports  
+
+### Maintenance
+
+#### Clean Old Results
+
+```powershell
+# Windows - Keep last 100 files
+Get-ChildItem results\*.json | 
+  Sort-Object LastWriteTime -Descending | 
+  Select-Object -Skip 100 | 
+  Remove-Item
+```
+
+```bash
+# Linux/Mac - Keep last 30 days
+find results -name "*.json" -mtime +30 -delete
+```
+
+#### Check Disk Usage
+
+```powershell
+# Windows
+Get-ChildItem results\*.json | 
+  Measure-Object -Property Length -Sum | 
+  Select-Object @{Name="Size(MB)";Expression={$_.Sum/1MB}}
+```
+
+```bash
+# Linux/Mac
+du -sh results/
+```
+
+---
+
 ## 📞 Support & Contact
 
 ### Getting Help
@@ -845,8 +1274,8 @@ Unauthorized access to computer systems is illegal and may result in criminal pr
 
 **Contact:**
 - GitHub: [@RISLAN-MOH-TM](https://github.com/RISLAN-MOH-TM)
-- Email: [Your Email]
-- Institution: [Your University]
+- Email: [rislanmohamedd151@gmail.com]
+- Institution: [BCAS Campus]
 
 ---
 
