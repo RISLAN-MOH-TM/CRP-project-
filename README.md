@@ -237,7 +237,6 @@ Execute complex testing workflows:
 
 ### AI Integration
 - **Claude AI** - Advanced language model (Anthropic)
-- **OpenRouter** - Multi-model AI gateway
 - **MCP Protocol** - AI-tool communication standard
 
 ### Security Tools (20+)
