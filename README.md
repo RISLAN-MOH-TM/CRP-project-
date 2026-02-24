@@ -57,7 +57,7 @@ Manual penetration testing is:
 
 An **AI-powered automated system** that:
 - ✅ Executes 20+ penetration testing tools automatically
-- ✅ Analyzes results using AI (Claude, OpenRouter)
+- ✅ Analyzes results using AI (Claude)
 - ✅ Generates professional security reports
 - ✅ Provides actionable remediation recommendations
 - ✅ Scales to test multiple targets simultaneously
