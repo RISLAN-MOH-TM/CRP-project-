@@ -132,7 +132,7 @@ An **AI-powered automated system** that:
 ### Component Description
 
 1. **AI Client Layer**
-   - Claude Desktop or Cline (VS Code extension)
+   - Claude Desktop
    - Provides natural language interface
    - Analyzes scan results
    - Generates professional reports
