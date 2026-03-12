@@ -1,0 +1,77 @@
+TARGET URL: http://[YOUR-URL-HERE]/[APP-NAME]/
+
+TOOLS TO USE (run all of these):
+- Nmap (port scan + service version detection)
+- Nikto (web server vulnerability scan)
+- Gobuster (directory and file enumeration)
+- FFUF (parameter fuzzing and input testing)
+- Hydra (brute-force / rate-limit testing)
+- SQLmap (SQL injection testing)
+- if need run other tools
+
+Please perform a full penetration test against the target above, 
+
+then generate a complete professional penetration testing report 
+in pdf format matching the following exact style and structure:
+
+═══════════════════════════════════════
+REPORT STYLE REQUIREMENTS
+═══════════════════════════════════════
+Tested By: [MT.RISLAN MOHAMED] — Security Analyst
+Testing Date: [DATE]
+
+VISUAL DESIGN:
+- Dark navy (1B2A4A) header bars on all vulnerability cards
+- Colour-coded severity cells: CRITICAL=red, HIGH=orange, MEDIUM=yellow, LOW=green
+- Dark monospace code blocks (dark background, light text) for ALL HTTP 
+  request/response examples and tool output
+- Two-column info tables (navy label column | white value column)
+- Left-border callout boxes for risk highlights and quotes
+- Professional header and footer on every page with page numbers
+
+DOCUMENT SECTIONS (include all 11):
+1. Cover Page — classification banner, metadata table, overall risk badge
+2. Table of Contents — with subsections listed
+3. Executive Summary — scorecard table + high-level narrative
+4. Target Information — system details, scope, objectives, limitations
+5. Tools and Methodology — tool table + 5-phase methodology explained
+6. Findings and Vulnerability Analysis:
+   - Summary table (ID, Title, Severity, CVSS, CWE, Tool)
+   - Per vulnerability: header bar with severity colour, info table 
+     (CWE/CVE/Component/CVSS Vector), Description, Technical Detail,
+     HTTP REQUEST code block, HTTP RESPONSE/Tool Output code block,
+     Plain-language risk explanation, Exploitation likelihood callout
+7. Risk Assessment — business impact table + attack chain as code block
+8. Incident Response & Counter-Measures — 6-step protocol + per-vuln steps
+9. Mitigation and Recommendations — remediation steps + priority roadmap table
+10. Conclusion — findings summary with positives and concerns split
+11. Ethical Disclaimer — authorisation statement + legal notice
+12. Glossary — 25 technical terms defined in plain English
+13. Sign-off Page — signature table (Tester/Reviewer/Owner/DPO) + report metadata
+
+WRITING STYLE:
+- Professional but plain English — understandable by non-technical readers
+- Every vulnerability must include a real HTTP request/response code block 
+  showing exactly what the tool saw
+- Exploitation likelihood must be stated clearly (e.g. "100% — no skill required")
+- Risk explained as a real-world story, not technical jargon
+- CVSS v3.1 score and vector string for every finding
+- CWE and CVE reference for every finding
+- Only report CONFIRMED vulnerabilities from actual scan results
+
+OUTPUT: Generate a polished, ready-to-submit .pdf file.
+
+
+
+Run a full penetration test on: http://[URL]/[APP]/
+Tester: [MT>RISLAN MOHAMED] | Date: [DATE]
+Tools: Nmap, Nikto, Gobuster, FFUF, Hydra, SQLmap
+
+Generate a professional DOCX penetration testing report with:
+- Dark navy design, colour-coded severity, dark code blocks for HTTP examples
+- All 11 sections from the Medicare Plus report style (cover, TOC, exec summary, 
+  target info, tools, findings with HTTP request/response blocks per vuln, 
+  risk assessment, incident response, mitigation roadmap, conclusion, 
+  disclaimer, glossary, sign-off page)
+- CVSS scores, CWE/CVE references, exploitation likelihood per finding
+- Only confirmed vulnerabilities from actual scan results
