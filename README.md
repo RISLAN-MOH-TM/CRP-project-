@@ -1,5 +1,4 @@
-# Automated Penetration Testing System for Vulnerability Detection
-and Report Generation Using AI
+# Automated Penetration Testing System for Vulnerability Detection and Report Generation Using AI
 
 **AI-Powered Vulnerability Detection, CVE Analysis & Professional Report Generation**
 
@@ -2441,5 +2440,6 @@ This project builds upon the excellent work of:
 **Project Type:** Computer Research Project  
 **Field:** Cybersecurity, Artificial Intelligence, Automation  
 **Year:** 2026
+
 
 
