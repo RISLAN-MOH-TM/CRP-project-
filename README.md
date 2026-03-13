@@ -303,20 +303,20 @@ Professional Report
 
 ### Component Description
 
-<<<<<<< HEAD
+
 1. **AI Client Layer**
    - Claude Desktop
    - Provides natural language interface
    - Analyzes scan results
    - Generates professional reports
-=======
+
 1. **AI Client Layer (Windows Host)**
    - Claude Desktop application
    - Provides natural language interface for security testing
    - Analyzes scan results with AI intelligence
    - Generates professional penetration testing reports
    - Integrates CVE intelligence into analysis
->>>>>>> 6b174ac (docs: Update documentation for CVE RAG Integration (v2.0.0))
+
 
 2. **Enhanced MCP Server Layer (Windows Host)**
    - Bridges AI client with Kali tools and CVE RAG system
@@ -2438,6 +2438,7 @@ This project builds upon the excellent work of:
 **Project Type:** Computer Research Project  
 **Field:** Cybersecurity, Artificial Intelligence, Automation  
 **Year:** 2026
+
 
 
 
