@@ -1,0 +1,15 @@
+# Core dependencies
+flask>=2.3.0
+requests>=2.31.0
+Flask-Limiter>=3.5.0  # Rate limiting protection
+
+# MCP Server
+# Note: Install mcp from the official source
+# pip install mcp
+
+# Optional but recommended
+python-dotenv>=1.0.0  # For .env file support
+
+# CVE RAG System
+# No extra dependencies — uses Python stdlib sqlite3 (built-in)
+# The cve_index.db is built once with: python cve_rag.py --build
