@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "kali-pentest": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\User\\User\\Desktop\\mcp\\mcp_server.py",
+        "--server", "http://172.20.10.11:5000"
+      ],
+      "env": {
+        "KALI_API_KEY": "kali-research-project-2026"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════
+#  Requirements — Kali Pentest MCP + CVE RAG System
+#  Install on Windows (MCP server side):
+#      pip install -r requirements.txt
+#
+#  kali_server.py runs on Kali Linux — install separately:
+#      pip install flask
+# ═══════════════════════════════════════════════════════════════
+
+# ── MCP server (mcp_server.py) ────────────────────────────────
+mcp[cli]>=1.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# ── CVE RAG engine (rag.py) ───────────────────────────────────
+# SQLite FTS5 — built into Python stdlib, no install needed
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# ── Kali Flask API (kali_server.py — Kali Linux only) ────────
+# flask>=2.3.0
