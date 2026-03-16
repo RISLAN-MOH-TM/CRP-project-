@@ -505,7 +505,6 @@ The system handles large scan outputs through a multi-tier approach:
 - **`mcp_server.py`**: MCP protocol server exposing tools to Claude AI
 - **`rag.py`**: CVE RAG engine with hybrid search (vector + FTS5)
 - **`ai_analysis.py`**: Context window manager and JSON schema enforcer
-- **`pdf_report.py`**: Professional PDF renderer with visual design system
 - **`PROMPT.txt`**: 14-section report template and AI behavior instructions
 
 ### Configuration Files
