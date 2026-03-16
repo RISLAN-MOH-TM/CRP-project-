@@ -72,42 +72,84 @@ An **AI-powered automated system** that:
 ## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Windows Host                               │
-│                                                                     │
-│  ┌─────────────────┐      ┌──────────────────────────────────────┐  │
-│  │  Claude AI      │      │  MCP Server (mcp_server.py)          │  │
-│  │  (Desktop/Cline)│◄────►│                                      │  │
-│  │                 │ MCP  │  Pentest Tools (18)                  │  │
-│  │  - Orchestrates │      │  CVE RAG Tools  (6)                  │  │
-│  │  - Analyzes     │      │  Results Tools  (5)                  │  │
-│  │  - Reports      │      └──────────┬──────────────┬────────────┘  │
-│  └─────────────────┘                 │              │               │
-│                                      │ HTTP REST    │ Local         │
-│                                      │ Port 5000    │ SQLite FTS5   │
-│                                      │              │               │
-│  ┌───────────────────────────────────▼──┐  ┌────────▼────────────┐  │
-│  │  Kali Linux VM (VMware)              │  │  CVE RAG Engine     │  │
-│  │                                      │  │  (cve_rag.py)       │  │
-│  │  Flask API (kali_server.py)          │  │                     │  │
-│  │  - API key auth + rate limiting      │  │  cve_index.db       │  │
-│  │  - Input sanitization                │  │  320,000+ CVEs      │  │
-│  │  - Scan audit logging                │  │  1999 – 2026        │  │
-│  │                                      │  │  <10ms queries      │  │
-│  │  Pentest Tools:                      │  └─────────────────────┘  │
-│  │  Network : Nmap, Masscan             │                           │
-│  │  Web     : Nikto, WPScan, WhatWeb    │  results/*.json           │
-│  │  Dir     : Gobuster, Feroxbuster,    │  (all scan outputs        │
-│  │            FFUF                      │   persisted to disk)      │
-│  │  Vuln    : Nuclei                    │                           │
-│  │  Exploit : Metasploit, Searchsploit  │                           │
-│  │  Creds   : Hydra, John, Hashcat      │                           │
-│  │  Enum    : Enum4linux-ng, Amass,     │                           │
-│  │            Subfinder                 │                           │
-│  │  SQL     : SQLmap                    │                           │
-│  │  Logs    : /opt/scans/logs/          │                           │
-│  └──────────────────────────────────────┘                           │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Windows Host                                   │
+│                                                                             │
+│  ┌──────────────────┐              ┌────────────────────────────────────┐   │
+│  │   AI Client      │              │   MCP Server (mcp_server.py)       │   │
+│  │  (Claude/Cline)  │◄────MCP─────►│   - 30+ MCP tools                  │   │
+│  │                  │   Protocol   │   - CVE RAG integration            │   │ 
+│  │  - Analysis      │              │   - Context window manager         │   │
+│  │  - Reports       │              │   - Result persistence             │   │
+│  └──────────────────┘              └────────────┬───────────────────────┘   │
+│                                                  │                          │
+│                                                  │ HTTP REST API            │
+│                                                  │ (Port 5000)              │
+│                                                  │                          │
+│  ┌───────────────────────────────────────────────▼────────────────────────┐ │
+│  │                    VMware Workstation Pro / VirtualBox                 │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐   │ │
+│  │  │                      Kali Linux VM                              │   │ │
+│  │  │                                                                 │   │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐   │   │ │
+│  │  │  │  Flask API Server (kali_server.py)                       │   │   │ │
+│  │  │  │  - Async job queue (max 5 concurrent)                    │   │   │ │
+│  │  │  │  - Token-bucket rate limiter                             │   │   │ │
+│  │  │  │  - SSE live streaming                                    │   │   │ │
+│  │  │  │  - API key authentication                                │   │   │ │
+│  │  │  │  - 10 MB output cap per job                              │   │   │ │
+│  │  │  └──────────────────────────────────────────────────────────┘   │   │ │
+│  │  │                                                                 │   │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐   │   │ │
+│  │  │  │  Penetration Testing Tools (20+)                         │   │   │ │
+│  │  │  │  Network: Nmap, Masscan                                  │   │   │ │
+│  │  │  │  Web: Nikto, WPScan, WhatWeb                             │   │   │ │
+│  │  │  │  Directory: Gobuster, Feroxbuster, FFUF                  │   │   │ │
+│  │  │  │  Vulnerability: Nuclei (CVE templates)                   │   │   │ │
+│  │  │  │  Exploitation: Metasploit, Searchsploit                  │   │   │ │
+│  │  │  │  Passwords: Hydra, John, Hashcat                         │   │   │ │
+│  │  │  │  Enumeration: Enum4linux-ng, Amass, Subfinder            │   │   │ │
+│  │  │  │  SQL: SQLmap                                             │   │   │ │
+│  │  │  └──────────────────────────────────────────────────────────┘   │   │ │
+│  │  │                                                                 │   │ │
+│  │  │  ┌──────────────────────────────────────────────────────────┐   │   │ │
+│  │  │  │  Scan Logs & Results                                     │   │   │ │
+│  │  │  │  /opt/scans/logs/ (job persistence)                      │   │   │ │
+│  │  │  └──────────────────────────────────────────────────────────┘   │   │ │
+│  │  └─────────────────────────────────────────────────────────────────┘   │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  CVE RAG System (rag.py)                                            │    │
+│  │  - SQLite FTS5: 320k+ CVEs (NVD 1999-2026 + OSV.dev)                │    │
+│  │  - ChromaDB: all-MiniLM-L6-v2 vector embeddings                     │    │
+│  │  - Hybrid search: FTS5 + vector ANN + RRF merge                     │    │
+│  │  - Alias resolver: "react" → ["react", "react-dom", "reactjs"]      │    │
+│  │  - Query latency: <10ms                                             │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  AI Analysis Layer (ai_analysis.py)                                 │    │
+│  │  - Context window manager (80k token budget)                        │    │
+│  │  - Per-tool output caps (nmap: 40k, nuclei: 30k, etc.)              │    │
+│  │  - Signal-line extraction (CVE IDs, open ports, errors)             │    │
+│  │  - 14-section report schema enforcer                                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  PDF Report Renderer (pdf_report.py)                                │    │
+│  │  - ReportLab-based professional PDF generator                       │    │
+│  │  - 14 sections: Cover → TOC → Findings → CVE Analysis → Sign-off    │    │
+│  │  - Dark navy headers, severity color coding, code blocks            │    │
+│  │  - Output: results/reports/*.pdf                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Results Storage                                                    │    │
+│  │  results/raw/*.json     — Raw tool outputs (JSON)                   │    │
+│  │  results/reports/*.pdf  — Final PDF reports                         │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Description
@@ -116,7 +158,7 @@ An **AI-powered automated system** that:
 |-------|------|------|------|
 | AI Client | Claude Desktop / Cline | Windows | Natural language interface, report generation |
 | MCP Server | `mcp_server.py` | Windows | Bridges Claude to tools and CVE RAG engine |
-| CVE RAG Engine | `cve_rag.py` | Windows | Local 320k CVE retrieval via SQLite FTS5 |
+| CVE RAG Engine | `cve_rag.py` | Windows | Local 320k CVE retrieval via SQLite FTS5 + Vector DB Hybride|
 | API Server | `kali_server.py` | Kali VM | Flask REST API — executes pentest tools |
 | Persistence | `results/*.json` | Windows | All scan outputs saved as JSON |
 | Audit Logs | `/opt/scans/logs/` | Kali VM | Server-side scan audit trail |
