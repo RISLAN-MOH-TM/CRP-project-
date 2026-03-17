@@ -930,7 +930,7 @@ automated-pentest-system/
 - [Supervisor Name: Mr. MIM Mohamed Nismy]
 - [Assessor Name: Mrs. ALF Sajeetha ]
 - Institution: [BCAS Campus]
-- Department: Computer Science / Cybersecurity  
+- Department: Computer Science
 
 ### Acknowledgments
 - **Kali Linux Team**: For the comprehensive security tool suite
