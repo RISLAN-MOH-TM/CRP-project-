@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penetration Test Report</title>
+    <style>
+        /* Print-friendly CSS */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: #1B2A4A;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin: -40px -40px 40px -40px;
+        }
+        
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header .confidential {
+            background: #D32F2F;
+            display: inline-block;
+            padding: 5px 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        /* Metadata */
+        .metadata {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #1B2A4A;
+        }
+        
+        .metadata div { padding: 5px 0; }
+        .metadata strong { color: #1B2A4A; }
+        
+        /* Risk Badge */
+        .risk-badge {
+            text-align: center;
+            padding: 20px;
+            margin: 30px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .risk-critical { background: #D32F2F; }
+        .risk-high { background: #E64A19; }
+        .risk-medium { background: #F9A825; }
+        .risk-low { background: #388E3C; }
+        
+        /* Section Headers */
+        .section {
+            margin: 40px 0;
+            page-break-inside: avoid;
+        }
+        
+        .section-header {
+            background: #1B2A4A;
+            color: white;
+            padding: 15px 20px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        /* Vulnerability Cards */
+        .vuln-card {
+            border: 2px solid #ddd;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        
+        .vuln-header {
+            padding: 15px 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .vuln-header.critical { background: #D32F2F; }
+        .vuln-header.high { background: #E64A19; }
+        .vuln-header.medium { background: #F9A825; color: #333; }
+        .vuln-header.low { background: #388E3C; }
+        
+        .vuln-body {
+            padding: 20px;
+        }
+        
+        .vuln-body h4 {
+            color: #1B2A4A;
+            margin: 20px 0 10px 0;
+            font-size: 16px;
+        }
+        
+        /* Info Table */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .info-table th {
+            background: #1B2A4A;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .info-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .info-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        /* Code Blocks */
+        .code-block {
+            background: #1E1E2E;
+            color: #CDD6F4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* Callout Boxes */
+        .callout {
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #1B2A4A;
+            background: #f0f4f8;
+        }
+        
+        .callout strong {
+            display: block;
+            color: #1B2A4A;
+            margin-bottom: 5px;
+        }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 20px; }
+            .section { page-break-inside: avoid; }
+            .vuln-card { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="confidential">CONFIDENTIAL</div>
+            <h1>PENETRATION TEST REPORT</h1>
+            <p>Web Application Security Assessment</p>
+        </div>
+        
+        <!-- METADATA -->
+        <div class="metadata">
+            <div><strong>Target:</strong> http://testphp.vulnweb.com</div>
+            <div><strong>Tested By:</strong> MT. RISLAN MOHAMED</div>
+            <div><strong>Date:</strong> 2026-03-16</div>
+            <div><strong>Report Ref:</strong> PENTEST-2026-001</div>
+            <div><strong>Scope:</strong> Web Application</div>
+            <div><strong>CVE Database:</strong> 320,000+ CVEs (1999-2026)</div>
+        </div>
+        
+        <!-- OVERALL RISK -->
+        <div class="risk-badge risk-high">
+            OVERALL RISK: HIGH
+        </div>
+        
+        <!-- EXECUTIVE SUMMARY -->
+        <div class="section">
+            <div class="section-header">1. EXECUTIVE SUMMARY</div>
+            
+            <table class="info-table">
+                <tr>
+                    <th>Severity</th>
+                    <th>Count</th>
+                </tr>
+                <tr style="background: #ffebee;"><td>CRITICAL</td><td>2</td></tr>
+                <tr style="background: #fff3e0;"><td>HIGH</td><td>5</td></tr>
+                <tr style="background: #fffde7;"><td>MEDIUM</td><td>8</td></tr>
+                <tr style="background: #e8f5e9;"><td>LOW</td><td>3</td></tr>
+            </table>
+            
+            <p style="margin-top: 20px;">
+                This penetration test identified multiple security vulnerabilities 
+                in the target web application. The most critical findings include 
+                SQL injection and cross-site scripting vulnerabilities that could 
+                allow attackers to compromise the application and access sensitive data.
+            </p>
+        </div>
+        
+        <!-- FINDINGS -->
+        <div class="section">
+            <div class="section-header">2. FINDINGS & VULNERABILITY ANALYSIS</div>
+            
+            <!-- Example Vulnerability -->
+            <div class="vuln-card">
+                <div class="vuln-header critical">
+                    VULN-001 | SQL Injection | CRITICAL | CVSS 9.8
+                </div>
+                <div class="vuln-body">
+                    <table class="info-table">
+                        <tr><th>CWE ID</th><td>CWE-89: SQL Injection</td></tr>
+                        <tr><th>CVE Reference</th><td>CVE-2023-12345</td></tr>
+                        <tr><th>Component</th><td>artists.php (parameter: artist)</td></tr>
+                        <tr><th>Tool Found By</th><td>SQLmap</td></tr>
+                    </table>
+                    
+                    <h4>Description</h4>
+                    <p>The application is vulnerable to SQL injection through the 'artist' parameter.</p>
+                    
+                    <h4>HTTP Request</h4>
+                    <div class="code-block">GET /artists.php?artist=1' OR '1'='1 HTTP/1.1
+Host: testphp.vulnweb.com
+User-Agent: sqlmap/1.7</div>
+                    
+                    <h4>HTTP Response</h4>
+                    <div class="code-block">HTTP/1.1 200 OK
+Content-Type: text/html
+
+[Database error revealing SQL injection]</div>
+                    
+                    <h4>CVE Intelligence</h4>
+                    <ul>
+                        <li><strong>Related CVEs:</strong> CVE-2023-12345, CVE-2022-98765</li>
+                        <li><strong>Historical Context:</strong> SQL injection has been a top vulnerability since 1999</li>
+                        <li><strong>Known Exploits:</strong> Public exploits available on Exploit-DB</li>
+                        <li><strong>Patches:</strong> Update to latest version, use prepared statements</li>
+                    </ul>
+                    
+                    <div class="callout">
+                        <strong>Risk Story:</strong>
+                        An attacker could exploit this vulnerability to bypass authentication, 
+                        extract sensitive data from the database, modify or delete records, 
+                        and potentially gain complete control of the database server.
+                    </div>
+                    
+                    <div class="callout">
+                        <strong>Exploitation Likelihood:</strong>
+                        95% — Public exploits available, no authentication required, 
+                        easily exploitable with automated tools.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add more vulnerability cards here -->
+            
+        </div>
+        
+        <!-- MITIGATIONS -->
+        <div class="section">
+            <div class="section-header">3. MITIGATION & RECOMMENDATIONS</div>
+            
+            <h3 style="color: #1B2A4A; margin: 20px 0 10px 0;">VULN-001: SQL Injection</h3>
+            <table class="info-table">
+                <tr>
+                    <th>Priority</th>
+                    <th>Action</th>
+                </tr>
+                <tr style="background: #ffebee;">
+                    <td><strong>IMMEDIATE (24h)</strong></td>
+                    <td>Disable vulnerable endpoint, implement input validation</td>
+                </tr>
+                <tr style="background: #fff3e0;">
+                    <td><strong>SHORT-TERM (1 week)</strong></td>
+                    <td>Implement prepared statements, parameterized queries</td>
+                </tr>
+                <tr style="background: #e8f5e9;">
+                    <td><strong>LONG-TERM (1 month)</strong></td>
+                    <td>Code review all database queries, implement WAF</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- CONCLUSION -->
+        <div class="section">
+            <div class="section-header">4. CONCLUSION</div>
+            
+            <div class="callout">
+                <strong>Security Posture:</strong>
+                The application requires immediate attention to address critical 
+                vulnerabilities. Implementation of the recommended mitigations 
+                will significantly improve the security posture.
+            </div>
+            
+            <p style="margin-top: 20px;">
+                <strong>Tested By:</strong> MT. RISLAN MOHAMED — Security Analyst<br>
+                <strong>Date:</strong> 2026-03-16<br>
+                <strong>Classification:</strong> CONFIDENTIAL
+            </p>
+        </div>
+    </div>
+</body>
+</html>

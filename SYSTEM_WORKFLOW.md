@@ -1,29 +1,12 @@
-# Automated Penetration Testing System for Vulnerability Detection and Report Generation Using AI
+# System Workflow - Automated Penetration Testing System
 
-> An intelligent penetration testing framework that combines Kali Linux security tools with AI-powered analysis and a comprehensive CVE RAG (Retrieval-Augmented Generation) intelligence system to automate vulnerability detection and generate professional security reports.
+## Overview
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![AI](https://img.shields.io/badge/AI-Claude%20Sonnet%204.5-purple.svg)](https://www.anthropic.com/)
+This document provides a complete end-to-end workflow of how the automated penetration testing system operates, from user input to final report generation.
 
 ---
 
-## Abstract
-
-This research project presents an automated penetration testing system that integrates industry-standard security tools from Kali Linux with Claude AI for intelligent vulnerability analysis and report generation. The system features a local CVE RAG database containing 320,000+ vulnerabilities (NVD 1999-2026 + OSV.dev), enabling real-time vulnerability enrichment with historical context, exploit intelligence, and remediation guidance. The architecture employs a three-tier design: a Kali Linux backend for tool execution, a Windows-based MCP (Model Context Protocol) server for orchestration, and an AI analysis layer that produces professional HTML reports with CVSS scoring, risk narratives, and actionable mitigation strategies.
-
-## Project Overview
-
-Traditional penetration testing is time-intensive, requiring manual tool execution, result correlation, and report writing. This system automates the entire workflow:
-
-1. **Autonomous Scanning**: AI agent orchestrates 18+ Kali Linux tools based on target reconnaissance
-2. **Real-Time CVE Enrichment**: Every discovered service/vulnerability is cross-referenced against a local 320k CVE database
-3. **Intelligent Analysis**: Claude AI correlates findings, calculates risk scores, and generates exploitation narratives
-4. **Professional Reporting**: Automated HTML generation with visual severity indicators, attack chains, and executive summaries displayed inline in chat
-
-The system reduces a typical 8-hour manual pentest to under 30 minutes while maintaining professional report quality.
-
- High-Level Architecture
+## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -468,530 +451,585 @@ User Input (Natural Language)
 
 ---
 
-### Component Breakdown
 
-**Windows Layer (MCP Server)**
-- `mcp_server.py`: Model Context Protocol server exposing 25+ tools to Claude AI
-- `rag.py`: CVE database with hybrid search (vector + keyword + alias resolution)
-- `ai_analysis.py`: Context window manager and report structure enforcer
-
-**Kali Linux Layer (Tool Execution)**
-- `kali_server.py`: Flask REST API with async job queue and rate limiting
-- Security tools: 18+ pre-installed Kali tools for reconnaissance, scanning, and exploitation
-
-
-## CVE RAG Intelligence
-
-The system's core differentiator is its local CVE knowledge base with sub-10ms query latency.
-
-### Database Specifications
-- **Total CVEs**: 320,000+ vulnerabilities
-- **Sources**: NVD (1999-2026) + OSV.dev (npm, PyPI, Go, RubyGems, Maven, NuGet, Packagist, crates.io, Hex)
-- **Storage**: SQLite (metadata) + ChromaDB vector store (embeddings)
-- **Embeddings**: all-MiniLM-L6-v2 (384-dimensional sentence embeddings)
-- **Search Method**: Pure vector semantic search with CVSS boosting and alias expansion
-
-### Search Capabilities
-- **Natural Language Queries**: "react file upload vulnerability", "apache rce 2.4"
-- **Alias Resolution**: Automatically expands "react" → ["react", "react-dom", "react-scripts", "reactjs"]
-- **Product + Version Search**: Precise matching for "apache 2.4.49", "php 7.4.3"
-- **Severity Filtering**: Query by CRITICAL/HIGH/MEDIUM/LOW with optional year filter
-- **Batch Enrichment**: Process multiple services simultaneously (nmap output → CVE matches)
-
-### Query Performance
-- **Vector Semantic Search**: <10ms for top-50 ANN retrieval with HNSW index
-- **Lazy Model Loading**: Embedding model loads on first query (no startup delay)
-- **CVSS Boost**: Results ranked by semantic relevance + severity score
-- **Batch Processing**: Multiple service enrichment in parallel
-
-
-## Features
-
-### Automated Reconnaissance & Scanning
-- **Technology Fingerprinting**: WhatWeb, Nmap OS detection
-- **Port Scanning**: Nmap (full TCP/UDP), Masscan (high-speed)
-- **Web Vulnerability Scanning**: Nikto, Nuclei (CVE templates)
-- **Directory Enumeration**: Gobuster, FFUF, Feroxbuster
-- **SQL Injection Testing**: SQLmap with automatic parameter detection
-- **Credential Brute-Force**: Hydra (SSH, FTP, HTTP, RDP, SMB)
-- **CMS-Specific**: WPScan for WordPress vulnerabilities
-- **Subdomain Discovery**: Subfinder, Amass (passive + active)
-- **Exploit Search**: SearchSploit integration with Exploit-DB
-- **Password Cracking**: John the Ripper, Hashcat (GPU-accelerated)
-
-### Real-Time CVE Intelligence
-- **Automatic Enrichment**: Every discovered service triggers CVE lookup
-- **Historical Context**: Vulnerability trends from 1999-2026
-- **Exploit Availability**: Public exploit detection from CVE references
-- **Patch Intelligence**: Vendor advisories and fix versions
-- **Attack Surface Analysis**: Related CVEs for discovered technology stack
-
-### AI-Powered Analysis
-- **Context Window Management**: Intelligent truncation keeps scan data under 80k tokens
-- **Signal Extraction**: Prioritizes high-value output (open ports, CVE IDs, severity tags)
-- **Tool Prioritization**: Nmap/Nuclei results processed before low-signal tools
-- **CVSS Calculation**: Automated scoring using CVSS v3.1 methodology
-- **Risk Narratives**: Plain-English exploitation scenarios for business stakeholders
-
-### Professional Report Generation
-- **14-Section Structure**: Cover page, executive summary, findings, mitigations, CVE analysis, glossary
-- **Visual Severity Indicators**: Color-coded bars (Critical=red, High=orange, Medium=yellow, Low=green)
-- **Dark Code Blocks**: Monospace formatting for HTTP requests/responses
-- **Attack Chain Diagrams**: ASCII visualization of exploitation paths
-- **Executive Summaries**: Non-technical narratives for C-level stakeholders
-- **Incident Response Plans**: 6-step IR protocol with per-vulnerability response steps
-
-
-## Technology Stack
-
-### Backend (Kali Linux)
-- **OS**: Kali Linux 2024.x
-- **Web Framework**: Flask 2.3+ (async job queue)
-- **Security Tools**: 18+ pre-installed Kali tools
-- **Rate Limiting**: Token-bucket algorithm (no Redis dependency)
-- **Job Management**: Thread-based async execution with SSE streaming
-
-### MCP Server (Windows)
-- **Runtime**: Python 3.8+
-- **Protocol**: Model Context Protocol (MCP) 1.0+
-- **HTTP Client**: Requests 2.31+
-- **Environment**: python-dotenv for configuration
-
-### CVE RAG System
-- **Database**: SQLite 3.35+ (metadata storage only)
-- **Vector Store**: ChromaDB 0.4+ (persistent HNSW index)
-- **Embeddings**: sentence-transformers 2.2+ (all-MiniLM-L6-v2)
-- **Search Algorithm**: Pure vector semantic search with CVSS boosting
-
-### AI Analysis
-- **Model**: Claude Sonnet 4.5 (200k context window)
-- **Schema Validation**: JSON schema enforcement for structured output
-- **Token Management**: 80k token budget with intelligent truncation
-
-### Report Generation
-- **Output Format**: HTML with embedded CSS
-- **Display**: Inline artifact in Claude chat with download button
-- **Styling**: Navy headers, color-coded severity badges, dark code blocks
-- **Responsive**: Mobile, tablet, and desktop friendly
-- **Print**: Browser print function (Ctrl+P) for PDF export if needed
-
-
-## Installation Guide
-
-### Prerequisites
-- **Kali Linux**: Physical machine or VM with network access
-- **Windows**: For running MCP server and Claude Desktop
-- **Python**: 3.8 or higher on both systems
-- **Network**: Both systems must be on the same network or have routing configured
-
-### Step 1: Kali Linux Setup
-
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install required tools (most pre-installed on Kali)
-sudo apt install -y nmap masscan nikto gobuster ffuf feroxbuster \
-    sqlmap hydra wpscan john hashcat metasploit-framework \
-    nuclei subfinder amass whatweb
-
-# Clone repository
-git clone https://github.com/RISLAN-MOH-TM/CRP-project-.git
-cd automated-pentest-system
-
-# Install Python dependencies
-pip install flask
-
-# Start Kali API server
-python kali_server.py --ip 0.0.0.0 --port 5000
-
-# Note the IP address shown in the startup banner
-# Example: Network : http://192.168.1.100:5000
-```
-
-### Step 2: Windows MCP Server Setup
-
-```bash
-# Clone repository
-git clone https://github.com/RISLAN-MOH-TM/CRP-project-.git
-cd automated-pentest-system
-
-# Install Python dependencies
-pip install -r requirements.txt
-# Configure environment variables
-# Edit .env file with your Kali server IP
-KALI_SERVER_URL=http://192.168.1.100:5000
-KALI_API_KEY=kali-research-project-2026
-
-# Build CVE vector database (one-time setup, ~20-40 minutes)
-python rag.py --build-vectors
-
-# Optional: Ingest OSV.dev CVEs for npm/PyPI/Go
-python rag.py --ingest-osv npm PyPI Gom/PyPI/Go
-python rag.py --ingest-osv npm PyPI Go
-```
-
-### Step 3: Claude Desktop Configuration
-
-Create or edit `claude_mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "kali-pentest": {
-      "command": "python",
-      "args": [
-        "C:\\path\\to\\automated-pentest-system\\mcp_server.py",
-        "--server", "http://192.168.1.100:5000"
-      ],
-      "env": {
-        "KALI_API_KEY": "kali-research-project-2026"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop to load the MCP server.
-
-
-## Usage
-
-### Quick Start
-
-In Claude Desktop, simply provide a target:
+## Async Job Queue Flow (Kali Server)
 
 ```
-Scan http://testphp.vulnweb.com and generate a penetration test report
+┌─────────────────────────────────────────────────────────────────────┐
+│                    KALI SERVER JOB QUEUE                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+HTTP POST /api/tools/nmap
+       │
+       │ 1. API key validation
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Rate limiter check (token bucket)        │
+│ • nmap: 3 burst, 1 per 20s               │
+│ • If exhausted: return HTTP 429          │
+└──────┬───────────────────────────────────┘
+       │
+       │ 2. Token consumed
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Create Job object                        │
+│ • job_id: UUID                           │
+│ • tool: "nmap"                           │
+│ • command: "nmap -sCV ..."               │
+│ • status: "queued"                       │
+│ • timeout: 1800s                         │
+└──────┬───────────────────────────────────┘
+       │
+       │ 3. Return HTTP 202 Accepted
+       │    {"job_id": "abc123...", "status": "queued"}
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Background thread spawned                │
+│ • Acquire semaphore (max 5 concurrent)   │
+│ • Wait if 5 jobs already running         │
+└──────┬───────────────────────────────────┘
+       │
+       │ 4. Semaphore acquired
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Job status: "running"                    │
+│ • subprocess.Popen(command, shell=True)  │
+│ • stdout=PIPE, stderr=PIPE               │
+└──────┬───────────────────────────────────┘
+       │
+       │ 5. Stream output line-by-line
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Output processing                        │
+│ • Read stdout line by line               │
+│ • Append to job.stdout buffer            │
+│ • Push to SSE queue (live streaming)     │
+│ • Check 10 MB cap                        │
+│ • Check timeout (1800s)                  │
+└──────┬───────────────────────────────────┘
+       │
+       │ 6. Process completes or times out
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Job finalization                         │
+│ • status: "done" or "failed"             │
+│ • return_code: 0 or -1                   │
+│ • finished: timestamp                    │
+│ • Release semaphore                      │
+│ • Persist to /opt/scans/logs/*.json      │
+└──────┬───────────────────────────────────┘
+       │
+       │ 7. Job available for polling
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ GET /api/jobs/<job_id>                   │
+│ • Returns full job object                │
+│ • stdout, stderr, return_code            │
+└──────────────────────────────────────────┘
 ```
 
-The AI agent will:
-1. Check Kali server connectivity
-2. Run reconnaissance (WhatWeb, Nmap)
-3. Execute vulnerability scans (Nikto, Nuclei, SQLmap)
-5. Generate a professional HTML report displayed inline in chatnce
-5. Generate a professional PDF report
+---
 
-### Manual Tool Execution
-
-You can also invoke individual tools:
+## CVE RAG Search Flow
 
 ```
-# Port scan
-Run nmap scan on 192.168.1.100 with service detection
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CVE RAG SEARCH FLOW                              │
+└─────────────────────────────────────────────────────────────────────┘
 
-# Web vulnerability scan
-Run nikto scan on https://example.com
-
-# Directory enumeration
-Run gobuster on https://example.com with common wordlist
-
-# SQL injection test
-Run sqlmap on http://example.com/page.php?id=1
-
-# CVE lookup
-Search CVE database for "apache 2.4.49 vulnerabilities"
+User query: "apache 2.4.7 vulnerabilities"
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ rag.py: RAGEngine.search()               │
+│ • Check if model loaded                  │
+│ • If not: _ensure_model() (2-3s)         │
+└──────┬───────────────────────────────────┘
+       │
+       │ 1. Alias expansion
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ resolve_aliases("apache 2.4.7")          │
+│ • Input: ["apache", "2.4.7"]             │
+│ • Expand: ["apache", "httpd",            │
+│            "apache_http_server", "2.4.7"]│
+│ • Output: "apache httpd apache_http_...  │
+│           server 2.4.7"                  │
+└──────┬───────────────────────────────────┘
+       │
+       │ 2. Encode query
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ SentenceTransformer.encode()             │
+│ • Model: all-MiniLM-L6-v2                │
+│ • Input: expanded query string           │
+│ • Output: 384-dim vector                 │
+│ • Time: ~5ms                             │
+└──────┬───────────────────────────────────┘
+       │
+       │ 3. Vector search
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ ChromaDB.query()                         │
+│ • HNSW index search                      │
+│ • Cosine similarity                      │
+│ • Top 50 results                         │
+│ • Time: ~5ms                             │
+└──────┬───────────────────────────────────┘
+       │
+       │ 4. Fetch metadata
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ SQLite queries (batch)                   │
+│ • SELECT * FROM cves WHERE cve_id IN (...)│
+│ • Deserialize JSON fields                │
+│ • Time: ~2ms                             │
+└──────┬───────────────────────────────────┘
+       │
+       │ 5. CVSS boosting
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Score adjustment                         │
+│ • score = vector_score + (cvss/10)*0.1   │
+│ • Sort by adjusted score DESC            │
+│ • Return top 20                          │
+└──────┬───────────────────────────────────┘
+       │
+       │ 6. Format results
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Results returned                         │
+│ • CVE-2021-41773 (CRITICAL, CVSS 9.8)    │
+│ • CVE-2021-42013 (CRITICAL, CVSS 9.8)    │
+│ • CVE-2017-15715 (HIGH, CVSS 8.1)        │
+│ • ...                                    │
+│ • Total time: <10ms                      │
+└──────────────────────────────────────────┘
 ```
 
-### CVE Database Queries
+---
+
+
+## Error Handling & Recovery
+
+### Scenario 1: Kali Server Unreachable
 
 ```
-# Natural language search
-Search CVE database for "react file upload rce"
-
-# Exact CVE lookup
-Lookup CVE-2021-44228
-
-# Severity filter
-Show critical CVEs from 2024
-
-# Service enrichment
-Enrich these services with CVE data: apache 2.4.49, php 7.4.3, mysql 5.7
-
-# Database statistics
-Show CVE database stats
+Claude calls nmap_scan()
+       │
+       ▼
+mcp_server.py: POST http://192.168.x.x:5000/api/tools/nmap
+       │
+       │ Connection timeout (30s)
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Error returned to Claude                 │
+│ {"error": "Cannot connect to Kali..."}   │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+Claude: "Kali server is unreachable. Please check:
+         1. Is kali_server.py running?
+         2. Is the IP correct in .env?
+         3. Can you ping the Kali machine?"
 ```
 
-### Report Customization
+### Scenario 2: Tool Times Out
 
-The system generates reports with:
-- **Metadata**: Tester name, date, report reference, scope
-- **Executive Summary**: Non-technical narrative for management
-- **Findings**: Detailed vulnerability analysis with CVSS scores
-- **CVE Intelligence**: Historical context, exploit availability, patches
-- **Mitigations**: Immediate (24h), short-term (1 week), long-term (1 month)
-- **Incident Response**: 6-step IR protocol per vulnerability
-- **Glossary**: 25+ technical terms explained
+```
+Nmap scan running for 30 minutes (timeout: 1800s)
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ kali_server.py: Timeout reached          │
+│ • proc.terminate()                       │
+│ • job.timed_out = True                   │
+│ • job.status = "done"                    │
+│ • Partial stdout saved                   │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+Claude receives partial results
+       │
+       ▼
+Claude: "Nmap scan timed out after 30 minutes.
+         Partial results available. Consider:
+         - Reducing port range
+         - Using faster scan (-T4)
+         - Splitting into multiple scans"
+```
 
+### Scenario 3: Rate Limit Exceeded
 
-## Prompt Files
+```
+User: "Scan 10 targets with nmap"
+       │
+       ▼
+Claude calls nmap_scan() 10 times rapidly
+       │
+       │ First 3 succeed (burst capacity)
+       │ 4th request hits rate limit
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ kali_server.py: HTTP 429 Too Many Requests│
+│ {"error": "Rate limit exceeded",         │
+│  "retry_after": "30s"}                   │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+Claude: "Rate limit reached for nmap.
+         Waiting 30 seconds before retrying..."
+       │
+       │ (Wait 30s)
+       │
+       ▼
+Retry remaining scans
+```
 
-The system uses structured prompts to guide AI behavior:
+### Scenario 4: CVE Database Not Built
 
-14-section report template that defines:
-- **Phase 1 (Recon & Scanning)**: Tool execution order and decision logic
-- **Phase 2 (Report Generation)**: CVE enrichment and HTML report generation
-- **Writing Rules**: Professional tone, confirmed vulnerabilities only
-- **Visual Design**: Color palette, code block formatting, severity indicators
-- **Metadata Requirements**: Tester info, CVSS scoring, CWE/CVE referencestors
-- **Metadata Requirements**: Tester info, CVSS scoring, CWE/CVE references
-### Key Prompt Sections
-1. **Tool Decision Tree**: When to run each tool based on reconnaissance findings
-2. **CVE Enrichment Protocol**: Real-time lookup after every service/vulnerability discovery
-3. **HTML Structure**: 14-section structure with embedded CSS styling
-4. **Quality Gates**: No theoretical vulnerabilities, exact HTTP request/response required
-4. **Quality Gates**: No theoretical vulnerabilities, exact HTTP request/response required
+```
+Claude calls cve_search("apache rce")
+       │
+       ▼
+mcp_server.py: _init_rag()
+       │
+       ▼
+rag.py: RAGEngine.__init__()
+       │
+       │ Check if cve_rag.db exists
+       │ Check if cve_chroma/ exists
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Database not found                       │
+│ _rag.ready = False                       │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+_rag_check() returns error string
+       │
+       ▼
+Claude: "CVE database not built.
+         Run: python rag.py --build-vectors
+         This will take 20-40 minutes."
+```
 
+---
 
-## Research Objectives
+## Performance Characteristics
 
-This project investigates the feasibility of AI-driven penetration testing automation with the following goals:
+### Latency Breakdown (Typical Scan)
 
-1. **Reduce Manual Effort**: Automate the repetitive aspects of penetration testing (tool execution, result parsing, report writing)
-2. **Improve Consistency**: Eliminate human error in vulnerability documentation and CVSS scoring
-3. **Enhance Intelligence**: Provide real-time CVE context that manual testers cannot access at scale
-4. **Accelerate Reporting**: Generate professional reports in minutes instead of hours
-5. **Democratize Security**: Lower the barrier to entry for security assessments
+| Operation | Time | Notes |
+|-----------|------|-------|
+| MCP server startup | <1s | No blocking operations |
+| First CVE search | 2-3s | One-time model load |
+| Subsequent CVE searches | <10ms | Model cached |
+| Kali health check | <100ms | 5s timeout |
+| Tool submission (HTTP POST) | <50ms | Returns job_id immediately |
+| Job polling interval | 5s | Configurable |
+| Nmap scan (typical) | 2-5 min | Depends on target |
+| Nikto scan | 5-10 min | Full web scan |
+| SQLmap scan | 10-30 min | Depends on injection points |
+| Report generation | <5s | HTML creation |
 
-### Research Questions
+### Throughput Limits
 
- 1.	Can AI technology be applied to the particular cybersecurity issue?
- 2.	How can an AI-assisted penetration testing system using MCP automate vulnerability 
-    detection and generate meaningful security reports in an ethical Way?
+| Resource | Limit | Reason |
+|----------|-------|--------|
+| Concurrent Kali jobs | 5 | Semaphore in JobQueue |
+| Nmap rate limit | 1 per 20s | Token bucket |
+| Masscan rate limit | 1 per 30s | Token bucket |
+| Metasploit rate limit | 1 per 60s | Token bucket |
+| Tool output cap | 10 MB | Prevents OOM |
+| Context window | 80k tokens | Claude limit |
 
-
-
-## Methodology
-
-### 5-Phase Automated Workflow
-
-**Phase 1: Reconnaissance**
-- Technology fingerprinting (WhatWeb)
-- OS detection (Nmap)
-- Service version enumeration
-- Initial attack surface mapping
-
-**Phase 2: Vulnerability Scanning**
-- Port scanning (Nmap, Masscan)
-- Web server scanning (Nikto)
-- CVE template matching (Nuclei)
-- Directory enumeration (Gobuster, FFUF, Feroxbuster)
-
-**Phase 3: Exploitation Testing**
-- SQL injection (SQLmap)
-- Credential brute-force (Hydra)
-- CMS-specific tests (WPScan)
-- Metasploit module execution (only for confirmed CVEs)
-
-**Phase 4: CVE Enrichment**
-- Real-time RAG queries after every finding
-- Historical vulnerability pattern analysis
-- Exploit availability verification
-- Patch and mitigation research
-**Phase 5: Report Generation**
-- Context window optimization (80k token budget)
-- HTML generation via Claude AI with embedded CSS
-- Professional styling with visual severity indicators
-- Executive summary creation for non-technical stakeholders
-- Executive summary creation for non-technical stakeholders
-
-### Context Window Management Strategy
-
-The system handles large scan outputs through a multi-tier approach:
-
-1. **Per-Tool Caps**: Nmap (40k chars), Nuclei (30k chars), SQLmap (30k chars)
-2. **Signal Extraction**: Regex-based filtering for high-value lines (CVE IDs, open ports, severity tags)
-3. **Tool Prioritization**: Process Nmap/Nuclei first, deprioritize low-signal tools
-4. **Global Budget**: 320k char (80k token) hard limit with graceful truncation
-5. **CVE Context Appended Last**: Ensures intelligence is always included
-
-
-## Results & Analysis
-### Performance Metrics
-- **Scan Time**: 15-30 minutes for comprehensive assessment (vs 4-8 hours manual)
-- **Report Generation**: <2 minutes from scan completion to HTML display
-- **CVE Query Latency**: <10ms per lookup (320k database)
-- **Context Processing**: 80k tokens processed in <30 seconds
-- **HTML Rendering**: Instant display as artifact in chat30 seconds
-- **PDF Rendering**: <10 seconds for 50-page report
-
-### Output Quality
-- **CVSS Accuracy**: Automated scoring matches manual assessments (validated against NIST calculator)
-- **False Positive Rate**: <5% (only confirmed vulnerabilities reported)
-- **CVE Coverage**: 100% of discovered services matched against historical vulnerabilities
-- **Report Completeness**: All 14 required sections generated with proper formatting
-
-### Comparison: Manual vs Automated
-
-| Aspect | Manual Pentest | Automated System |
-|--------|---------------|------------------|
-| **Reconnaissance** | 1-2 hours | 5-10 minutes |
-| **Vulnerability Scanning** | 2-4 hours | 10-15 minutes |
-| **CVE Research** | 1-2 hours | Real-time (<1 min) |
-| **Report Writing** | 3-4 hours | 5 minutes |
-| **Total Time** | 7-12 hours | 20-30 minutes |
-| **CVE Context** | Limited (manual search) | Comprehensive (320k database) |
-| **Consistency** | Variable | Standardized |
-
-### Limitations
-- **No Manual Verification**: Cannot validate complex business logic flaws
-- **Limited Exploitation**: Does not perform deep post-exploitation (ethical constraints)
-- **False Negatives**: May miss vulnerabilities requiring manual code review
-- **Network Dependent**: Requires stable connection between Windows and Kali systems
+---
 
 
-## Future Enhancements
+## State Management
 
-### Planned Features
-- **Active Exploitation Module**: Safe exploitation with automatic rollback
-- **Continuous Monitoring**: Scheduled scans with diff reporting
-- **Multi-Target Support**: Parallel scanning of multiple hosts
-- **Custom Tool Integration**: Plugin system for proprietary security tools
-- **Compliance Mapping**: Automatic OWASP Top 10, CWE Top 25, PCI-DSS mapping
-- **Remediation Verification**: Re-scan after fixes to confirm mitigation
+### Job State Transitions (Kali Server)
 
-### Research Directions
-- **Property-Based Testing**: Formal correctness properties for scan reliability
-- **LLM Fine-Tuning**: Domain-specific model for security analysis
-- **Federated CVE Database**: Distributed RAG across multiple sources
-- **Adversarial Testing**: Red team vs blue team AI agent simulations
-- **Zero-Day Detection**: Anomaly detection for unknown vulnerability patterns
+```
+┌─────────┐
+│ queued  │ ← Initial state when job created
+└────┬────┘
+     │
+     │ Semaphore acquired
+     │
+     ▼
+┌─────────┐
+│ running │ ← Tool executing
+└────┬────┘
+     │
+     ├─────────────┬──────────────┐
+     │             │              │
+     │ Success     │ Timeout      │ Error
+     │             │              │
+     ▼             ▼              ▼
+┌─────────┐   ┌─────────┐   ┌─────────┐
+│  done   │   │  done   │   │ failed  │
+│ rc=0    │   │ timeout │   │ rc!=0   │
+└─────────┘   └─────────┘   └─────────┘
+```
 
+### RAG Engine State
 
-## Documentation
-### Core Files
-- **`kali_server.py`**: Flask API server with async job queue and rate limiting
-- **`mcp_server.py`**: MCP protocol server exposing tools to Claude AI
-- **`rag.py`**: CVE RAG engine with hybrid search (vector + FTS5)
-- **`ai_analysis.py`**: Context window manager and report structure enforcer
-- **`PROMPT_HTML.txt`**: 14-section HTML report template and AI behavior instructions
-- **`PROMPT.txt`**: 14-section report template and AI behavior instructions
+```
+┌──────────────────┐
+│ Not initialized  │ ← Before first CVE search
+└────────┬─────────┘
+         │
+         │ First cve_search() call
+         │
+         ▼
+┌──────────────────┐
+│ Loading model    │ ← 2-3 seconds
+└────────┬─────────┘
+         │
+         │ Model loaded
+         │
+         ▼
+┌──────────────────┐
+│ Ready            │ ← All subsequent searches <10ms
+└──────────────────┘
+```
 
-### Configuration Files
-- **`.env`**: Environment variables (Kali server URL, API key)
-- **`requirements.txt`**: Python dependencies for Windows MCP server
-- **`claude_mcp_config.json`**: Claude Desktop MCP server configuration
+### MCP Connection State
 
-### Directory Structure
+```
+┌──────────────────┐
+│ Disconnected     │ ← Claude Desktop closed
+└────────┬─────────┘
+         │
+         │ User opens Claude Desktop
+         │
+         ▼
+┌──────────────────┐
+│ Spawning         │ ← mcp_server.py starting
+└────────┬─────────┘
+         │
+         │ <1 second
+         │
+         ▼
+┌──────────────────┐
+│ Connected        │ ← Ready for tool calls
+└────────┬─────────┘
+         │
+         │ User closes Claude Desktop
+         │
+         ▼
+┌──────────────────┐
+│ Disconnected     │ ← Process terminated
+└──────────────────┘
+```
+
+---
+
+## File System Layout
+
 ```
 automated-pentest-system/
-├── kali_server.py          # Kali Linux Flask API
-├── mcp_server.py           # MCP server (Windows)
-├── rag.py                  # CVE RAG engine
-├── ai_analysis.py          # AI analysis layer
-├── PROMPT_HTML.txt         # HTML report template
-├── requirements.txt        # Python dependencies
-├── .env                    # Configuration
-├── cves/                   # CVE JSON files (337k files)
-│   ├── 1999/
-│   ├── 2000/
-│   └── ... (through 2026)
-├── cve_rag.db              # SQLite FTS5 database
-├── cve_chroma/             # ChromaDB vector store
-└── results/
-    ├── raw/                # Tool JSON outputs
-    └── reports/            # Generated HTML reports
+│
+├── Windows Host (MCP Server)
+│   ├── mcp_server.py          ← MCP protocol server
+│   ├── rag.py                 ← CVE RAG engine
+│   ├── .env                   ← Configuration
+│   ├── requirements.txt       ← Python dependencies
+│   │
+│   ├── cves/                  ← CVE JSON files (337k files)
+│   │   ├── 1999/
+│   │   ├── 2000/
+│   │   └── ... (through 2026)
+│   │
+│   ├── cve_rag.db             ← SQLite metadata (267 MB)
+│   │
+│   ├── cve_chroma/            ← ChromaDB vector store (1.3 GB)
+│   │   ├── chroma.sqlite3
+│   │   └── [HNSW index files]
+│   │
+│   └── results/
+│       ├── raw/               ← Tool JSON outputs
+│       │   ├── nmap_testphp_20260317_143022.json
+│       │   ├── nikto_testphp_20260317_143145.json
+│       │   └── ...
+│       │
+│       └── reports/           ← Generated HTML reports
+│           └── pentest_testphp_20260317.html
+│
+└── Kali Linux VM (Tool Execution)
+    ├── kali_server.py         ← Flask API server
+    │
+    └── /opt/scans/logs/       ← Job persistence
+        ├── abc123-uuid.json   ← Job metadata + output
+        └── ...
 ```
 
-### API Documentation
+---
 
-**Kali Server Endpoints**
-- `POST /api/tools/nmap` - Port scanning
-- `POST /api/tools/nikto` - Web vulnerability scanning
-- `POST /api/tools/sqlmap` - SQL injection testing
-- `GET /api/jobs/<job_id>` - Poll job status
-- `GET /api/jobs/<job_id>/stream` - SSE live output stream
-- `GET /health` - Server health check
+## Security Considerations
 
-**MCP Tools (Claude AI)**
-**MCP Tools (Claude AI)**
-- `nmap_scan()` - Port and service detection
-- `cve_search()` - Natural language CVE search
-- `cve_lookup()` - Exact CVE ID lookup
-- `cve_enrich_services()` - Batch service enrichment
-- `prepare_scan_context()` - Report context preparation
+### Authentication Flow
 
-## Contributors
+```
+┌──────────────────────────────────────────┐
+│ Every HTTP request to Kali               │
+└──────┬───────────────────────────────────┘
+       │
+       │ Header: X-API-Key: kali-research-project-2026
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ kali_server.py: @require_api_key         │
+│ • Compare header with API_KEY env var    │
+│ • If mismatch: HTTP 401 Unauthorized     │
+│ • If match: proceed to handler           │
+└──────────────────────────────────────────┘
+```
 
-**MT. RISLAN MOHAMED** — Security Analyst & Lead Developer
-- System architecture and design
-- CVE RAG engine implementation
-- AI analysis layer development
-- Report generation system
+### Input Sanitization
 
-### Acknowledgments
-- **Kali Linux Team**: For the comprehensive security tool suite
-- **Anthropic**: For Claude AI and Model Context Protocol
-- **NVD/MITRE**: For CVE database (public domain)
-- **OSV.dev**: For ecosystem-specific vulnerability data
-- **Sentence Transformers**: For all-MiniLM-L6-v2 embeddings
+```
+User input: target="example.com; rm -rf /"
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ kali_server.py: sanitize()               │
+│ • Strip: ; & | ` $ ( ) < > \n \r         │
+│ • Output: "example.com rm -rf "          │
+└──────┬───────────────────────────────────┘
+       │
+       ▼
+Command: "nmap example.com rm -rf "
+       │
+       │ (Shell injection prevented)
+       │
+       ▼
+Nmap fails gracefully (invalid target)
+```
 
+### Network Isolation
 
-## License
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Network Topology                         │
+└─────────────────────────────────────────────────────────────┘
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Internet
+    │
+    │ (Firewall)
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│ Local Network (192.168.x.x/24)          │
+│                                         │
+│  ┌──────────────┐    ┌──────────────┐  │
+│  │ Windows Host │◄──►│  Kali Linux  │  │
+│  │ 192.168.x.10 │    │ 192.168.x.11 │  │
+│  └──────────────┘    └──────────────┘  │
+│         │                    │          │
+│         │                    │          │
+│         │ Port 5000          │          │
+│         │ (API only)         │          │
+│         │                    │          │
+│         └────────────────────┘          │
+│                                         │
+└─────────────────────────────────────────┘
 
-### Third-Party Data Sources
-- **NVD CVE Database**: Public domain (U.S. Government work)
-- **OSV.dev**: Apache 2.0 License
-- **Kali Linux Tools**: Various open-source licenses (GPL, BSD, MIT)
-
-### Ethical Use Statement
-
-This tool is designed for **authorized security testing only**. Users must:
-- Obtain written permission before scanning any target
-- Comply with all applicable laws and regulations
-- Use responsibly within defined scope and testing windows
-- Follow responsible disclosure practices for discovered vulnerabilities
-
-**Unauthorized use of this system against targets without explicit permission is illegal and unethical.**
+Recommendations:
+• Keep Kali on isolated network segment
+• Use firewall rules to restrict port 5000 to Windows host only
+• Never expose Kali API to internet
+• Use VPN if Windows and Kali are on different networks
+```
 
 ---
 
-## Quick Reference
+## Troubleshooting Decision Tree
 
-### Essential Commands
+```
+Problem: "Taking longer than usual" on Claude Desktop startup
+       │
+       ▼
+Is mcp_server.py blocking on startup?
+       │
+       ├─ YES → Check:
+       │        • Kali health check removed? (should be lazy)
+       │        • RAG model loading removed? (should be lazy)
+       │        • Any other blocking network calls?
+       │
+       └─ NO → Check:
+                • Is Python process hanging?
+                • Check Claude Desktop logs
+                • Restart Claude Desktop
+```
 
-```bash
-# Kali Linux (start server)
-python kali_server.py --ip 0.0.0.0 --port 5000
+```
+Problem: CVE search returns "not found"
+       │
+       ▼
+Is cve_rag.db present?
+       │
+       ├─ NO → Run: python rag.py --build-vectors
+       │
+       └─ YES → Is cve_chroma/ directory present?
+                │
+                ├─ NO → Run: python rag.py --build-vectors
+                │
+                └─ YES → Check:
+                         • Is query too specific?
+                         • Try broader terms
+                         • Check stats: python rag.py --stats
+```
 
-# Windows (build CVE database)
-```bash
-# Kali Linux (start server)
-python kali_server.py --ip 0.0.0.0 --port 5000
-
-# Windows (build CVE vector database - one time, ~20-40 min)
-python rag.py --build-vectors
-
-# Windows (test RAG engine)
-python rag.py --search "apache rce"
-python rag.py --lookup CVE-2021-44228
-python rag.py --stats
-
-# Claude Desktop (example prompts)
-"Scan http://testphp.vulnweb.com and generate a report"
-"Search CVE database for react vulnerabilities"
-"Show me critical CVEs from 2024"
-```erify Kali server is running: `python kali_server.py`
-- Check IP address in `.env` matches Kali network IP
-- Test connectivity: `ping <kali_ip>` from Windows
-- Verify firewall allows port 5000
-
-**CVE database not found**
-- Run: `python rag.py --build-fts` (one-time setup)
-- Ensure `cves/` directory contains JSON files
-- Check `cve_rag.db` file exists
-
-**MCP server not loading**
-**CVE database not found**
-- Run: `python rag.py --build-vectors` (one-time setup, ~20-40 min)
-- Ensure `cves/` directory contains JSON files
-- Check `cve_rag.db` and `cve_chroma/` directory existe Desktop
+```
+Problem: Kali tools not executing
+       │
+       ▼
+Can you reach Kali server?
+       │
+       ├─ NO → Check:
+       │        • Is kali_server.py running?
+       │        • Ping Kali IP from Windows
+       │        • Check firewall rules
+       │        • Verify .env KALI_SERVER_URL
+       │
+       └─ YES → Check:
+                • API key correct in .env?
+                • Tool installed on Kali? (which nmap)
+                • Check Kali server logs
+                • Try: curl http://KALI_IP:5000/health
+```
 
 ---
 
-**For questions, issues, or contributions, please open an issue on GitHub.**
+## Summary
 
-**Project Status**: Active Development | Research Project | Educational Use
+This system workflow demonstrates:
 
+1. **Lazy initialization** — No blocking on startup
+2. **Async execution** — Tools run in background, non-blocking
+3. **Real-time intelligence** — CVE enrichment during scan
+4. **Graceful degradation** — Continues even if some tools fail
+5. **Professional output** — Structured HTML reports
+
+**Total time from user input to report**: 20-30 minutes for comprehensive scan.
+
+**Key optimization**: MCP server starts in <1 second, enabling instant Claude Desktop connection.

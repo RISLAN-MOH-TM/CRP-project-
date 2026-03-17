@@ -1,0 +1,180 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║           AUTOMATED PENETRATION TESTING SYSTEM - QUICK WORKFLOW           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: USER INPUT                                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+    User: "Scan http://testphp.vulnweb.com and generate a report"
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: CLAUDE AI PLANNING                                              │
+│ • Parse target URL                                                      │
+│ • Plan tool sequence: recon → scan → exploit → CVE → report            │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: RECONNAISSANCE (5-10 minutes)                                   │
+│ ┌─────────────┐  ┌─────────────┐                                       │
+│ │  WhatWeb    │  │    Nmap     │                                       │
+│ │  Scan       │  │    Scan     │                                       │
+│ └──────┬──────┘  └──────┬──────┘                                       │
+│        │                │                                               │
+│        └────────┬───────┘                                               │
+│                 ↓                                                       │
+│    Results: Apache 2.4.7, PHP 5.5.9, Ports 80/443                      │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: VULNERABILITY SCANNING (10-15 minutes)                          │
+│ ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│ │  Nikto   │  │  Nuclei  │  │ Gobuster │  │  SQLmap  │               │
+│ └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘               │
+│      │             │             │             │                       │
+│      └─────────────┴─────────────┴─────────────┘                       │
+│                          ↓                                              │
+│    Results: 15 vulnerabilities found (2 Critical, 5 High, 6 Med, 2 Low)│
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: CVE INTELLIGENCE ENRICHMENT (<1 minute)                         │
+│ ┌─────────────────────────────────────────────────────────────────┐    │
+│ │  CVE RAG Engine (Vector Search)                                 │    │
+│ │  • Query: "apache 2.4.7 vulnerabilities"                        │    │
+│ │  • Results: 10 CVEs (CVE-2021-41773, CVE-2021-42013, ...)       │    │
+│ │  • Query: "php 5.5.9 vulnerabilities"                           │    │
+│ │  • Results: 8 CVEs                                              │    │
+│ └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 6: AI ANALYSIS & REPORT GENERATION (<5 minutes)                    │
+│ • Correlate all findings                                                │
+│ • Calculate CVSS scores                                                 │
+│ • Generate risk narratives                                              │
+│ • Create mitigation strategies                                          │
+│ • Build HTML report with embedded CSS                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STEP 7: FINAL OUTPUT                                                    │
+│ ✓ Report saved: results/reports/pentest_testphp_20260317.html          │
+│ ✓ Total findings: 15 (2 Critical, 5 High, 6 Medium, 2 Low)             │
+│ ✓ Total time: 20-30 minutes                                            │
+│ ✓ Open in browser and press Ctrl+P to save as PDF                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         COMPONENT INTERACTION                             ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+    ┌──────────────┐
+    │    USER      │
+    └──────┬───────┘
+           │ Natural language
+           ↓
+    ┌──────────────┐
+    │ Claude AI    │ ←──────────────┐
+    │ (LLM)        │                │
+    └──────┬───────┘                │
+           │ MCP Protocol           │ Results
+           ↓                        │
+    ┌──────────────┐                │
+    │ mcp_server.py│ ───────────────┘
+    └──────┬───────┘
+           │
+           ├─────────────────┬──────────────────┐
+           │                 │                  │
+           │ HTTP REST       │ Local            │
+           ↓                 ↓                  │
+    ┌──────────────┐  ┌──────────────┐         │
+    │ Kali Server  │  │  CVE RAG     │         │
+    │ (Flask API)  │  │  Engine      │         │
+    └──────┬───────┘  └──────────────┘         │
+           │                                    │
+           │ subprocess                         │
+           ↓                                    │
+    ┌──────────────┐                            │
+    │ Kali Tools   │                            │
+    │ (18+ tools)  │                            │
+    └──────────────┘                            │
+           │                                    │
+           │ Tool output                        │
+           └────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         KEY PERFORMANCE METRICS                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────┬──────────────┬─────────────────────────┐
+│ Operation                       │ Time         │ Notes                   │
+├─────────────────────────────────┼──────────────┼─────────────────────────┤
+│ MCP Server Startup              │ <1 second    │ No blocking operations  │
+│ First CVE Search                │ 2-3 seconds  │ One-time model load     │
+│ Subsequent CVE Searches         │ <10ms        │ Model cached            │
+│ Tool Submission (HTTP POST)     │ <50ms        │ Returns job_id          │
+│ Nmap Scan                       │ 2-5 minutes  │ Depends on target       │
+│ Nikto Scan                      │ 5-10 minutes │ Full web scan           │
+│ SQLmap Scan                     │ 10-30 min    │ Depends on complexity   │
+│ Report Generation               │ <5 seconds   │ HTML creation           │
+├─────────────────────────────────┼──────────────┼─────────────────────────┤
+│ TOTAL (Complete Pentest)        │ 20-30 min    │ vs 4-8 hours manual     │
+└─────────────────────────────────┴──────────────┴─────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         DATA PERSISTENCE                                  ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Windows Host:
+    results/raw/
+        ├── nmap_testphp_20260317_143022.json      ← Raw tool output
+        ├── nikto_testphp_20260317_143145.json
+        ├── sqlmap_testphp_20260317_144230.json
+        └── ...
+
+    results/reports/
+        └── pentest_testphp_20260317.html          ← Final report
+
+Kali Linux:
+    /opt/scans/logs/
+        ├── abc123-uuid.json                       ← Job metadata
+        ├── def456-uuid.json
+        └── ...
+
+CVE Database:
+    cve_rag.db                                     ← SQLite (267 MB)
+    cve_chroma/                                    ← ChromaDB (1.3 GB)
+        ├── chroma.sqlite3
+        └── [HNSW index files]
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         SECURITY FEATURES                                 ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+✓ API Key Authentication      (X-API-Key header on all requests)
+✓ Input Sanitization          (Strip shell metacharacters)
+✓ Rate Limiting               (Token bucket per tool)
+✓ Output Capping              (10 MB max per job)
+✓ Timeout Protection          (30 min default per tool)
+✓ Network Isolation           (Kali on private network)
+✓ Async Job Queue             (Max 5 concurrent, prevents DoS)
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         OPTIMIZATION HIGHLIGHTS                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+Before Optimization:
+    • MCP startup: 7-11 seconds (blocking health check + model load)
+    • "Taking longer than usual" errors
+    • Hybrid FTS5 + vector search (complex)
+
+After Optimization:
+    • MCP startup: <1 second (lazy loading)
+    • No startup delays
+    • Pure vector search (simpler, faster)
+    • 10x faster startup
+    • 33% faster CVE queries
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         END OF QUICK WORKFLOW                             ║
+╚═══════════════════════════════════════════════════════════════════════════╝

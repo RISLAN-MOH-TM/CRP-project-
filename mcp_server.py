@@ -58,17 +58,22 @@ REPORTS_DIR          = os.path.join(RESULTS_DIR, "reports")  # final PDF reports
 os.makedirs(RAW_DIR,     exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
-# -- RAG engine (auto-init on import) -----------------------------------------
-try:
-    from rag import RAGEngine
-    _rag = RAGEngine()
-    if _rag.ready:
-        logger.info(f"RAG engine ready — mode: {_rag.mode}")
-    else:
-        logger.warning("RAG DB not built yet. Run: python rag.py --build-fts")
-except Exception as _e:
-    _rag = None
-    logger.warning(f"RAG engine failed to load: {_e}")
+# -- RAG engine (lazy init — does not block MCP startup) ----------------------
+_rag = None
+
+def _init_rag():
+    global _rag
+    if _rag is not None:
+        return
+    try:
+        from rag import RAGEngine
+        _rag = RAGEngine()
+        if _rag.ready:
+            logger.info(f"RAG engine ready — mode: {_rag.mode}")
+        else:
+            logger.warning("RAG DB not built yet. Run: python rag.py --build-vectors")
+    except Exception as _e:
+        logger.warning(f"RAG engine failed to load: {_e}")
 
 
 # ------------------------------------------------------------------------------
@@ -227,10 +232,11 @@ def _load_results() -> List[dict]:
 
 def _rag_check() -> Optional[str]:
     """Return error string if RAG not ready, else None."""
+    _init_rag()
     if _rag is None:
         return "RAG engine failed to load. Check rag.py exists."
     if not _rag.ready:
-        return "CVE database not built. Run: python rag.py --build-fts"
+        return "CVE vector DB not built. Run: python rag.py --build-vectors"
     return None
 
 
@@ -406,7 +412,7 @@ def build_mcp(kali: KaliClient) -> FastMCP:
         ]
         for tool, avail in result.get("tools_status", {}).items():
             lines.append(f"  {'?' if avail else '? MISSING'} {tool}")
-        rag_status = "ready" if (_rag and _rag.ready) else "not built — run: python rag.py --build-fts"
+        rag_status = "ready" if (_rag and _rag.ready) else "not built — run: python rag.py --build-vectors"
         lines.append(f"\nRAG engine      : {rag_status}")
         if _rag and _rag.ready:
             lines.append(f"RAG mode        : {_rag.mode}")
@@ -709,14 +715,10 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     kali = KaliClient(args.server, args.timeout, API_KEY)
-    health = kali.health()
-    if health.get("error"):
-        logger.warning(f"Kali server unreachable: {health['error']} — pentest tools will fail")
-    else:
-        logger.info(f"Kali server connected: {health.get('status','ok')}")
-
+    # No startup health check — connect lazily when tools are called
+    logger.info(f"MCP server starting — Kali target: {kali.url}")
     mcp = build_mcp(kali)
-    logger.info("MCP server starting — all tools registered")
+    logger.info("All tools registered — ready")
     mcp.run()
 
 

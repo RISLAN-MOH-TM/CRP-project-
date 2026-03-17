@@ -1,0 +1,52 @@
+═══════════════════════════════════════════════════════════════
+  AUTOMATED PENETRATION TEST WITH HTML REPORT
+  Tester: MT. RISLAN MOHAMED — Security Analyst
+═══════════════════════════════════════════════════════════════
+
+TARGET: http://testphp.vulnweb.com
+DATE: 2026-03-16
+
+INSTRUCTIONS:
+Run a complete penetration test and generate a colorful HTML report
+that can be printed to PDF from the browser.
+
+═══════════════════════════════════════════════════════════════
+PHASE 1: SCANNING (Handle Timeouts)
+═══════════════════════════════════════════════════════════════
+
+1. Check for existing scans:
+   → get_scan_history()
+   → pull_scan_results(target_filter="testphp.vulnweb.com")
+
+2. Run quick scans first:
+   → whatweb_scan("http://testphp.vulnweb.com")
+   → nmap_scan("testphp.vulnweb.com", ports="22,80,443")
+
+3. Enrich immediately:
+   → cve_enrich_services("[services found]")
+
+4. Run longer scans (will timeout, that's OK):
+   → nikto_scan("http://testphp.vulnweb.com")
+   → gobuster_scan("http://testphp.vulnweb.com")
+   → sqlmap_scan("http://testphp.vulnweb.com/artists.php?artist=1")
+
+5. After 5 minutes:
+   → get_scan_history()
+   → pull_scan_results()
+
+═══════════════════════════════════════════════════════════════
+PHASE 2: GENERATE HTML REPORT
+═══════════════════════════════════════════════════════════════
+
+Create a complete HTML file with:
+- Embedded CSS (no external files)
+- Colorful design (navy headers, severity badges)
+- All findings with CVE intelligence
+- Print-friendly CSS
+
+Save as: pentest_report_[target]_[date].html
+
+Then tell user: "Open the HTML file in your browser and press Ctrl+P
+to print as PDF"
+
+═══════════════════════════════════════════════════════════════

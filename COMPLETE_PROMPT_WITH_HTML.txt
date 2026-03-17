@@ -1,0 +1,141 @@
+═══════════════════════════════════════════════════════════════
+  COMPLETE PENETRATION TEST WITH COLORFUL HTML REPORT
+  Copy and paste this entire prompt into Claude
+═══════════════════════════════════════════════════════════════
+
+TARGET: http://testphp.vulnweb.com
+TESTER: MT. RISLAN MOHAMED — Security Analyst
+DATE: 2026-03-16
+
+Run a complete penetration test and generate a colorful HTML report.
+
+PHASE 1: SCANNING
+─────────────────────────────────────────────────────────────
+
+1. Check existing scans:
+   - get_scan_history()
+   - pull_scan_results(target_filter="testphp")
+
+2. Run quick scans:
+   - whatweb_scan("http://testphp.vulnweb.com")
+   - nmap_scan("testphp.vulnweb.com", ports="22,80,443,8080")
+
+3. Enrich with CVE data:
+   - cve_enrich_services("[services from nmap/whatweb]")
+   - cve_database_stats()
+
+4. Run vulnerability scans (may timeout):
+   - nikto_scan("http://testphp.vulnweb.com")
+   - sqlmap_scan("http://testphp.vulnweb.com/artists.php?artist=1")
+   - gobuster_scan("http://testphp.vulnweb.com")
+
+5. After scans, pull results:
+   - get_scan_history()
+   - pull_scan_results()
+
+PHASE 2: GENERATE HTML REPORT
+─────────────────────────────────────────────────────────────
+
+Create a complete HTML file with this structure:
+
+
+REQUIRED HTML STRUCTURE:
+─────────────────────────────────────────────────────────────
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  /* Navy headers, colorful severity badges, dark code blocks */
+  body { font-family: Arial; background: #f5f5f5; }
+  .header { background: #1B2A4A; color: white; padding: 30px; }
+  .risk-critical { background: #D32F2F; }
+  .risk-high { background: #E64A19; }
+  .risk-medium { background: #F9A825; }
+  .risk-low { background: #388E3C; }
+  .code-block { background: #1E1E2E; color: #CDD6F4; padding: 15px; }
+  @media print { body { background: white; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div style="background:#D32F2F;padding:5px;">CONFIDENTIAL</div>
+    <h1>PENETRATION TEST REPORT</h1>
+  </div>
+  
+  <!-- Metadata -->
+  <div>Target: [URL]</div>
+  <div>Tester: MT. RISLAN MOHAMED</div>
+  <div>Date: [DATE]</div>
+  
+  <!-- Risk Badge -->
+  <div class="risk-high">OVERALL RISK: HIGH</div>
+  
+  <!-- Executive Summary -->
+  <h2>1. EXECUTIVE SUMMARY</h2>
+  <table>
+    <tr><td>CRITICAL</td><td>[count]</td></tr>
+    <tr><td>HIGH</td><td>[count]</td></tr>
+    <tr><td>MEDIUM</td><td>[count]</td></tr>
+    <tr><td>LOW</td><td>[count]</td></tr>
+  </table>
+  
+  <!-- Findings -->
+  <h2>2. FINDINGS</h2>
+  <div class="vuln-card">
+    <div class="vuln-header critical">
+      VULN-001 | SQL Injection | CRITICAL | CVSS 9.8
+    </div>
+    <div>
+      <h4>Description</h4>
+      <p>[vulnerability description]</p>
+      
+      <h4>HTTP Request</h4>
+      <div class="code-block">[exact request]</div>
+      
+      <h4>HTTP Response</h4>
+      <div class="code-block">[exact response]</div>
+      
+      <h4>CVE Intelligence</h4>
+      <ul>
+        <li>Related CVEs: [list]</li>
+        <li>Known Exploits: [info]</li>
+        <li>Patches: [recommendations]</li>
+      </ul>
+      
+      <div class="callout">
+        <strong>Risk:</strong> An attacker could...
+      </div>
+    </div>
+  </div>
+  
+  <!-- Mitigations -->
+  <h2>3. MITIGATIONS</h2>
+  <table>
+    <tr><td>IMMEDIATE (24h)</td><td>[action]</td></tr>
+    <tr><td>SHORT-TERM (1 week)</td><td>[action]</td></tr>
+    <tr><td>LONG-TERM (1 month)</td><td>[action]</td></tr>
+  </table>
+  
+  <!-- Conclusion -->
+  <h2>4. CONCLUSION</h2>
+  <p>[summary]</p>
+</body>
+</html>
+
+IMPORTANT RULES:
+─────────────────────────────────────────────────────────────
+
+✓ Use embedded CSS (no external files)
+✓ Include ALL findings from scans
+✓ Add CVE intelligence for each finding
+✓ Use colorful severity badges (red/orange/yellow/green)
+✓ Dark code blocks for HTTP requests/responses
+✓ Include print CSS (@media print)
+✓ Save as: pentest_report_testphp_20260316.html
+
+After generating, tell me:
+"HTML report created! Open it in your browser and press Ctrl+P 
+to print as a colorful PDF."
+
+═══════════════════════════════════════════════════════════════

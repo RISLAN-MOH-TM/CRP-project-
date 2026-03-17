@@ -13,7 +13,6 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 
 # ── CVE RAG engine (rag.py) ───────────────────────────────────
-# SQLite FTS5 — built into Python stdlib, no install needed
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
 
