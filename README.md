@@ -911,13 +911,26 @@ automated-pentest-system/
 - `cve_enrich_services()` - Batch service enrichment
 - `prepare_scan_context()` - Report context preparation
 
-## Contributors
+## 👥 Contributors
 
 **MT. RISLAN MOHAMED** — Security Analyst & Lead Developer
 - System architecture and design
 - CVE RAG engine implementation
 - AI analysis layer development
 - Report generation system
+
+### Project Team
+
+**Project Lead & Developer:**
+- MT. RISLAN MOHAMED
+- Role: System Architecture, Implementation, Testing
+- Contact: [GitHub](https://github.com/RISLAN-MOH-TM)
+
+**Academic Supervisor:**
+- [Supervisor Name: Mr. MIM Mohamed Nismy]
+- [Assessor Name: Mrs. ALF Sajeetha ]
+- Institution: [BCAS Campus]
+- Department: Computer Science / Cybersecurity  
 
 ### Acknowledgments
 - **Kali Linux Team**: For the comprehensive security tool suite
