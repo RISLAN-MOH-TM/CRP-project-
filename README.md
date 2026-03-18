@@ -1,20 +1,18 @@
-# 🛡️ Automated Penetration Testing System for Vulnerability Detection and Report Generation Using AI
+# Automated Penetration Testing System for Vulnerability Detection and Report Generation Using AI
 
-> 🤖 An intelligent penetration testing framework that combines Kali Linux security tools with AI-powered analysis and a comprehensive CVE RAG (Retrieval-Augmented Generation) intelligence system to automate vulnerability detection and generate professional security reports.
+> An intelligent penetration testing framework that combines Kali Linux security tools with AI-powered analysis and a comprehensive CVE RAG (Retrieval-Augmented Generation) intelligence system to automate vulnerability detection and generate professional security reports.
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![AI](https://img.shields.io/badge/AI-Claude%20Sonnet%204.5-purple.svg)](https://www.anthropic.com/)
-[![Security](https://img.shields.io/badge/Security-Kali%20Linux-557C94.svg)](https://www.kali.org/)
-[![CVE Database](https://img.shields.io/badge/CVE-320k%2B-red.svg)](https://nvd.nist.gov/)
 
 ---
 
-## 📋 Abstract
+## Abstract
 
 This research project presents an automated penetration testing system that integrates industry-standard security tools from Kali Linux with Claude AI for intelligent vulnerability analysis and report generation. The system features a local CVE RAG database containing 320,000+ vulnerabilities (NVD 1999-2026 + OSV.dev), enabling real-time vulnerability enrichment with historical context, exploit intelligence, and remediation guidance. The architecture employs a three-tier design: a Kali Linux backend for tool execution, a Windows-based MCP (Model Context Protocol) server for orchestration, and an AI analysis layer that produces professional HTML reports with CVSS scoring, risk narratives, and actionable mitigation strategies.
 
-## 🎯 Project Overview
+## Project Overview
 
 Traditional penetration testing is time-intensive, requiring manual tool execution, result correlation, and report writing. This system automates the entire workflow:
 
@@ -62,7 +60,13 @@ The system reduces a typical 8-hour manual pentest to under 30 minutes while mai
 │  │  • Job polling          │   │  • Lazy model loading        │   │
 │  └─────────────────────────┘   └──────────────────────────────┘   │
 │                                                                     │
-
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  Evaluation Layer (evaluate_report.py)                       │  │
+│  │  • DeepSeek v3 model                                         │  │
+│  │  • Raw data vs AI report comparison                          │  │
+│  │  • Accuracy, completeness, false positive detection          │  │
+│  │  • Quality scoring (0-100)                                   │  │
+│  └──────────────────────────────────────────────────────────────┘  │
 └─────────────────┼──────────────────────────────────────────────────┘
                   │ HTTP REST API
                   │ (Network: 192.168.x.x:5000)
@@ -93,7 +97,7 @@ The system reduces a typical 8-hour manual pentest to under 30 minutes while mai
 
 ### Phase 1: Initialization & Connection
 
-## 🔄 Detailed Workflow: Complete Penetration Test
+```
 ┌──────────────┐
 │ User starts  │
 │ Claude       │
@@ -412,7 +416,7 @@ User Input: "Scan http://testphp.vulnweb.com and generate a report"
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-## 📊 Data Flow Diagram      DATA FLOW                                   │
+│                         DATA FLOW                                   │
 └─────────────────────────────────────────────────────────────────────┘
 
 User Input (Natural Language)
@@ -489,7 +493,7 @@ User Input (Natural Language)
 
 The system includes an independent AI evaluation layer using DeepSeek v3 to validate report quality and accuracy.
 
-## ✅ Evaluation Layer (DeepSeek v3)
+### Purpose
 
 Ensures AI-generated penetration test reports are:
 - **Accurate**: Match raw scan data exactly
@@ -530,225 +534,6 @@ Raw Scan Data                    AI-Generated Report
          └────────────────────────────┘
 ```
 
-### DeepSeek v3 Evaluator Architecture
-
-The evaluation system uses DeepSeek v3 as an independent validator to ensure AI-generated reports are accurate and trustworthy.
-
-#### Why DeepSeek v3?
-
-- **Independent Validation**: Separate model from Claude (report generator) prevents bias
-- **Strong Reasoning**: DeepSeek v3 excels at logical comparison and fact-checking
-- **Cost-Effective**: Lower inference cost for batch evaluation tasks
-- **JSON Output**: Native structured output for programmatic processing
-
-#### Evaluation Pipeline
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                  DEEPSEEK V3 EVALUATION PIPELINE                    │
-└─────────────────────────────────────────────────────────────────────┘
-
-Step 1: Data Ingestion
-┌──────────────────────────────────────────────────────────────────┐
-│ evaluate_report.py                                               │
-│ • Load all raw scan JSON files (nmap, nikto, sqlmap, etc.)      │
-│ • Parse HTML report (extract findings, CVEs, CVSS scores)       │
-│ • Build ground truth dataset from raw scans                     │
-└──────────────┬───────────────────────────────────────────────────┘
-               │
-               ▼
-Step 2: Structured Comparison
-┌──────────────────────────────────────────────────────────────────┐
-│ DeepSeek v3 Prompt Engineering                                   │
-│                                                                  │
-│ System Prompt:                                                   │
-│ "You are a penetration testing QA auditor. Compare raw scan     │
-│  data against an AI-generated report. Identify discrepancies,   │
-│  missing findings, and hallucinated vulnerabilities."           │
-│                                                                  │
-│ Input Context:                                                   │
-│ • Raw nmap output: [ports, services, versions]                  │
-│ • Raw nikto output: [vulnerabilities found]                     │
-│ • Raw sqlmap output: [injection points]                         │
-│ • AI Report findings: [extracted vulnerabilities]               │
-│                                                                  │
-│ Task Instructions:                                               │
-│ 1. Verify every CVE ID exists in raw data                       │
-│ 2. Check CVSS scores match NVD database                         │
-│ 3. Confirm service versions are exact                           │
-│ 4. Detect any findings not in raw scans (hallucinations)        │
-│ 5. Identify missed critical/high vulnerabilities                │
-│ 6. Score report quality (formatting, clarity, actionability)    │
-└──────────────┬───────────────────────────────────────────────────┘
-               │
-               ▼
-Step 3: Multi-Dimensional Analysis
-┌──────────────────────────────────────────────────────────────────┐
-│ Accuracy Check (35% weight)                                      │
-│ ┌────────────────────────────────────────────────────────────┐  │
-│ │ For each finding in AI report:                             │  │
-│ │   • Extract CVE ID → Search in raw scan output             │  │
-│ │   • Extract CVSS score → Verify against CVE database       │  │
-│ │   • Extract service version → Match with nmap/whatweb      │  │
-│ │   • Extract port number → Confirm in nmap results          │  │
-│ │                                                            │  │
-│ │ Scoring:                                                   │  │
-│ │   accuracy_score = (matches / total_findings) * 100        │  │
-│ └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│ Completeness Check (30% weight)                                 │
-│ ┌────────────────────────────────────────────────────────────┐  │
-│ │ For each finding in raw scans:                             │  │
-│ │   • Check if included in AI report                         │  │
-│ │   • Prioritize critical/high severity                      │  │
-│ │   • Verify CVE enrichment was performed                    │  │
-│ │   • Confirm mitigation provided                            │  │
-│ │                                                            │  │
-│ │ Scoring:                                                   │  │
-│ │   completeness = (included / total_raw_findings) * 100     │  │
-│ └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│ False Positive Detection (25% weight)                           │
-│ ┌────────────────────────────────────────────────────────────┐  │
-│ │ For each finding in AI report:                             │  │
-│ │   • If CVE not in raw data → Flag as hallucination         │  │
-│ │   • If service not detected → Flag as phantom              │  │
-│ │   • If CVSS mismatch > 1.0 → Flag as incorrect             │  │
-│ │                                                            │  │
-│ │ Scoring:                                                   │  │
-│ │   false_positive_penalty = (fp_count * 5) points           │  │
-│ └────────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│ Quality Assessment (10% weight)                                 │
-│ ┌────────────────────────────────────────────────────────────┐  │
-│ │ • Formatting: Proper HTML structure, CSS styling           │  │
-│ │ • Clarity: Risk narratives understandable                  │  │
-│ │ • Actionability: Specific mitigation steps                 │  │
-│ │ • Executive Summary: Non-technical language                │  │
-│ └────────────────────────────────────────────────────────────┘  │
-└──────────────┬───────────────────────────────────────────────────┘
-               │
-               ▼
-Step 4: Weighted Scoring
-┌──────────────────────────────────────────────────────────────────┐
-│ Final Score Calculation                                          │
-│                                                                  │
-│ overall_score = (accuracy * 0.35) +                              │
-│                 (completeness * 0.30) +                          │
-│                 ((100 - fp_penalty) * 0.25) +                    │
-│                 (quality * 0.10)                                 │
-│                                                                  │
-│ Grade Assignment:                                                │
-│   95-100 → A+ (Excellent)                                        │
-│   90-94  → A  (Very Good)                                        │
-│   85-89  → B+ (Good)                                             │
-│   80-84  → B  (Satisfactory)                                     │
-│   75-79  → C  (Fair)                                             │
-│   <75    → F  (Fail)                                             │
-└──────────────┬───────────────────────────────────────────────────┘
-               │
-               ▼
-Step 5: JSON Output Generation
-┌──────────────────────────────────────────────────────────────────┐
-│ {                                                                │
-│   "evaluation_id": "eval_20260317_143022",                       │
-│   "evaluator": "DeepSeek-V3",                                    │
-│   "metrics": {                                                   │
-│     "accuracy": { "score": 95.5, "details": {...} },            │
-│     "completeness": { "score": 98.0, "details": {...} },        │
-│     "false_positives": { "count": 2, "details": [...] },        │
-│     "quality": { "score": 96.0, "details": {...} }              │
-│   },                                                             │
-│   "overall_score": 96.4,                                         │
-│   "grade": "A",                                                  │
-│   "pass": true,                                                  │
-│   "recommendation": "..."                                        │
-│ }                                                                │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-#### Example: Accuracy Validation
-
-**Raw Nmap Output:**
-```
-PORT    STATE SERVICE  VERSION
-80/tcp  open  http     Apache httpd 2.4.7
-443/tcp open  ssl/http Apache httpd 2.4.7
-## 🗄️ CVE RAG Intelligence
-
-**AI Report Finding:**
-```
-"Apache HTTP Server 2.4.49 running on ports 80, 443"
-```
-
-**DeepSeek v3 Analysis:**
-```json
-{
-  "finding_id": "VULN-001",
-  "accuracy_issue": {
-    "type": "version_mismatch",
-    "expected": "2.4.7",
-    "found": "2.4.49",
-    "severity": "high",
-    "impact": "Incorrect CVE mapping - 2.4.49 has different vulnerabilities than 2.4.7"
-  },
-  "recommendation": "Correct version to 2.4.7 and re-run CVE enrichment"
-}
-```
-
-#### Example: False Positive Detection
-
-**Raw Scan Data:**
-## ⚡ Featuresmention of CVE-2023-12345
-- Nikto: No mention of CVE-2023-12345
-- SQLmap: No mention of CVE-2023-12345
-
-**AI Report Finding:**
-```
-"CVE-2023-12345: Critical SQL injection vulnerability (CVSS 9.8)"
-```
-
-**DeepSeek v3 Analysis:**
-```json
-{
-  "finding_id": "VULN-005",
-  "false_positive": {
-    "type": "hallucinated_cve",
-    "cve_id": "CVE-2023-12345",
-    "reason": "CVE ID not found in any raw scan output",
-    "severity": "critical",
-    "action": "Remove from report - no evidence in scan data"
-  }
-}
-```
-
-#### Integration with CI/CD
-
-```bash
-# Automated evaluation in CI pipeline
-#!/bin/bash
-
-# Step 1: Generate report
-python mcp_server.py --scan http://target.com
-
-# Step 2: Evaluate report
-python evaluate_report.py \
-    --raw-dir results/raw/ \
-    --report results/reports/latest.html \
-    --output evaluation.json
-## 🛠️ Technology Stack
-# Step 3: Check quality gate
-SCORE=$(jq '.overall_score' evaluation.json)
-if (( $(echo "$SCORE < 85" | bc -l) )); then
-    echo "❌ Report quality below threshold: $SCORE/100"
-    echo "Review evaluation.json for issues"
-    exit 1
-else
-    echo "✅ Report quality passed: $SCORE/100"
-    exit 0
-fi
-```
-
 ### Evaluation Metrics
 
 | Metric | Description | Weight |
@@ -770,7 +555,7 @@ fi
 | • Fabricated Exploits | Exploit claims without evidence | |
 | **Quality** | Professional report standards? | 10% |
 | • Formatting | Proper structure, visual design | |
-## 📦 Installation Guideisk narratives | |
+| • Clarity | Clear risk narratives | |
 | • Actionability | Specific, implementable mitigations | |
 | • Executive Summary | Non-technical stakeholder language | |
 
@@ -847,11 +632,11 @@ python compare_evaluations.py \
       ]
     },
     
-
-
-## 🚀 Usage
-
-### Quick Starty": 95.0,
+    "quality": {
+      "score": 96.0,
+      "details": {
+        "formatting": 98.0,
+        "clarity": 95.0,
         "actionability": 94.0,
         "executive_summary": 97.0
       }
@@ -918,7 +703,7 @@ The system's core differentiator is its local CVE knowledge base with sub-10ms q
 
 ### Automated Reconnaissance & Scanning
 - **Technology Fingerprinting**: WhatWeb, Nmap OS detection
-## 📝 Prompt Filesng**: Nmap (full TCP/UDP), Masscan (high-speed)
+- **Port Scanning**: Nmap (full TCP/UDP), Masscan (high-speed)
 - **Web Vulnerability Scanning**: Nikto, Nuclei (CVE templates)
 - **Directory Enumeration**: Gobuster, FFUF, Feroxbuster
 - **SQL Injection Testing**: SQLmap with automatic parameter detection
@@ -937,7 +722,7 @@ The system's core differentiator is its local CVE knowledge base with sub-10ms q
 
 ### AI-Powered Analysis
 - **Context Window Management**: Intelligent truncation keeps scan data under 80k tokens
-## 🔬 Research Objectives*: Prioritizes high-value output (open ports, CVE IDs, severity tags)
+- **Signal Extraction**: Prioritizes high-value output (open ports, CVE IDs, severity tags)
 - **Tool Prioritization**: Nmap/Nuclei results processed before low-signal tools
 - **CVSS Calculation**: Automated scoring using CVSS v3.1 methodology
 - **Risk Narratives**: Plain-English exploitation scenarios for business stakeholders
@@ -955,7 +740,7 @@ The system's core differentiator is its local CVE knowledge base with sub-10ms q
 
 ### Backend (Kali Linux)
 - **OS**: Kali Linux 2024.x
-## 🔧 Methodologyork**: Flask 2.3+ (async job queue)
+- **Web Framework**: Flask 2.3+ (async job queue)
 - **Security Tools**: 18+ pre-installed Kali tools
 - **Rate Limiting**: Token-bucket algorithm (no Redis dependency)
 - **Job Management**: Thread-based async execution with SSE streaming
@@ -1000,7 +785,7 @@ The system's core differentiator is its local CVE knowledge base with sub-10ms q
 sudo apt update && sudo apt upgrade -y
 
 # Install required tools (most pre-installed on Kali)
-## 📈 Results & Analysismap masscan nikto gobuster ffuf feroxbuster \
+sudo apt install -y nmap masscan nikto gobuster ffuf feroxbuster \
     sqlmap hydra wpscan john hashcat metasploit-framework \
     nuclei subfinder amass whatweb
 
@@ -1034,7 +819,7 @@ KALI_API_KEY=kali-research-project-2026
 
 # Build CVE vector database (one-time setup, ~20-40 minutes)
 python rag.py --build-vectors
-## 🚧 Future Enhancements
+
 # Optional: Ingest OSV.dev CVEs for npm/PyPI/Go
 python rag.py --ingest-osv npm PyPI Gom/PyPI/Go
 python rag.py --ingest-osv npm PyPI Go
@@ -1052,7 +837,7 @@ Create or edit `claude_mcp_config.json`:
       "args": [
         "C:\\path\\to\\automated-pentest-system\\mcp_server.py",
         "--server", "http://192.168.1.100:5000"
-## 📚 Documentation
+      ],
       "env": {
         "KALI_API_KEY": "kali-research-project-2026"
       }
@@ -1134,7 +919,7 @@ The system generates reports with:
 
 
 ## Prompt Files
-## 📄 License
+
 The system uses structured prompts to guide AI behavior:
 
 14-section report template that defines:
@@ -1155,7 +940,7 @@ The system uses structured prompts to guide AI behavior:
 ## Research Objectives
 
 This project investigates the feasibility of AI-driven penetration testing automation with the following goals:
-## ⚡ Quick Reference
+
 1. **Reduce Manual Effort**: Automate the repetitive aspects of penetration testing (tool execution, result parsing, report writing)
 2. **Improve Consistency**: Eliminate human error in vulnerability documentation and CVSS scoring
 3. **Enhance Intelligence**: Provide real-time CVE context that manual testers cannot access at scale
@@ -1197,7 +982,6 @@ This project investigates the feasibility of AI-driven penetration testing autom
 - Historical vulnerability pattern analysis
 - Exploit availability verification
 - Patch and mitigation research
-
 **Phase 5: Report Generation**
 - Context window optimization (80k token budget)
 - HTML generation via Claude AI with embedded CSS
