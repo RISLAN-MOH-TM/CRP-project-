@@ -515,14 +515,36 @@ You are an expert penetration tester and security report writer.
 Your job is to analyse the scan results and CVE intelligence provided,
 then produce a professional penetration testing report.
 
-RULES — non-negotiable:
-  ✓ ONLY report CONFIRMED vulnerabilities from actual tool output
-  ✓ Every finding needs: CVSS v3.1 score + vector, CWE ID, CVE ID
+CRITICAL EVIDENCE RULES — STRICTLY ENFORCED:
+  ✓ ONLY report vulnerabilities with DIRECT EVIDENCE in the scan output
+  ✓ If a port is not explicitly shown as "open" in nmap output, DO NOT report it as open
+  ✓ If a tool shows "connection refused", "filtered", or "failed", DO NOT report findings for that service
+  ✓ If no SQLmap/FFUF output exists, DO NOT report POST endpoint vulnerabilities
+  ✓ If no header analysis exists, DO NOT report missing headers as a vulnerability
+  ✓ Every finding MUST quote the exact tool output that proves it exists
+  ✓ Every finding needs: CVSS v3.1 score + vector, CWE ID, CVE ID (or N/A if not applicable)
   ✓ Every finding needs: exact HTTP request + response in http_request/http_response fields
   ✓ Every finding needs: cve_intelligence section populated from the CVE context
   ✓ Every finding needs: exploitation_likelihood with percentage and reason
   ✓ risk_story must be a real-world narrative: "An attacker could..."
-  ✗ Never include theoretical, unconfirmed, or assumed vulnerabilities
+  ✗ NEVER fabricate findings based on assumptions
+  ✗ NEVER report theoretical vulnerabilities
+  ✗ NEVER assume a service exists if the scan shows it's filtered/refused
+  ✗ NEVER report "missing security headers" without actual header scan output
+
+EVIDENCE VALIDATION CHECKLIST:
+  Before adding ANY finding to the report, verify:
+  1. Can I quote the exact line from tool output that proves this?
+  2. Did the tool successfully connect and find this issue?
+  3. Is this a confirmed vulnerability or just a failed scan?
+  4. Do I have the actual HTTP request/response or tool output?
+
+IF ALL SCANS FAILED:
+  • Report ZERO findings in the findings[] array
+  • In target_information.limitations, explain all scans were blocked
+  • In conclusion.concerns, note the target appears heavily firewalled
+  • Set overall_risk to "LOW" since no vulnerabilities were confirmed
+  • In tools_and_methodology, document which tools failed and why
 
 VISUAL DESIGN NOTES (for the renderer that will consume this JSON):
   • Severity colours: CRITICAL=red | HIGH=orange | MEDIUM=yellow | LOW=green
@@ -547,6 +569,77 @@ _CVE_RAG_NOTE = (
 )
 
 
+def validate_scan_results(raw_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Analyze scan results to detect if scans actually succeeded.
+    Returns validation metadata to guide report generation.
+    """
+    validation = {
+        "has_open_ports": False,
+        "has_successful_web_scans": False,
+        "has_sql_injection_tests": False,
+        "has_header_analysis": False,
+        "failed_tools": [],
+        "successful_tools": [],
+        "open_ports": [],
+        "filtered_ports": [],
+    }
+    
+    for result in raw_results:
+        tool = result.get("tool", "")
+        stdout = result.get("stdout", "") or ""
+        stderr = result.get("stderr", "") or ""
+        success = result.get("success", False)
+        
+        # Check for connection failures
+        if any(phrase in stdout.lower() or phrase in stderr.lower() 
+               for phrase in ["connection refused", "connection timed out", "failed to connect", 
+                             "could not connect", "no route to host"]):
+            validation["failed_tools"].append(tool)
+            continue
+            
+        # Nmap port analysis
+        if tool == "nmap":
+            # Look for actual open ports
+            open_port_matches = re.findall(r"(\d+)/tcp\s+open", stdout)
+            filtered_port_matches = re.findall(r"(\d+)/tcp\s+filtered", stdout)
+            
+            if open_port_matches:
+                validation["has_open_ports"] = True
+                validation["open_ports"].extend(open_port_matches)
+                validation["successful_tools"].append(tool)
+            
+            if filtered_port_matches:
+                validation["filtered_ports"].extend(filtered_port_matches)
+                
+        # Web scanning tools
+        elif tool in ["gobuster", "ffuf", "feroxbuster", "nikto"]:
+            if success and stdout and len(stdout) > 100:
+                # Check if it actually found something vs just errored
+                if not any(err in stdout.lower() for err in ["error", "failed", "refused"]):
+                    validation["has_successful_web_scans"] = True
+                    validation["successful_tools"].append(tool)
+                else:
+                    validation["failed_tools"].append(tool)
+            else:
+                validation["failed_tools"].append(tool)
+                
+        # SQL injection testing
+        elif tool == "sqlmap":
+            if "parameter" in stdout.lower() and "vulnerable" in stdout.lower():
+                validation["has_sql_injection_tests"] = True
+                validation["successful_tools"].append(tool)
+            elif stdout:
+                validation["failed_tools"].append(tool)
+                
+        # Header analysis
+        elif tool in ["nmap"] and "--script" in result.get("command", ""):
+            if "http-headers" in stdout.lower() or "security-headers" in stdout.lower():
+                validation["has_header_analysis"] = True
+                
+    return validation
+
+
 def build_report_prompt(
     scan_context: str,
     target: str,
@@ -555,6 +648,7 @@ def build_report_prompt(
     scope: str = "",
     report_ref: str = "",
     extra_instructions: str = "",
+    validation: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Build the complete structured prompt Claude uses to generate the report.
@@ -586,9 +680,44 @@ def build_report_prompt(
 
     schema_str = json.dumps(REPORT_SCHEMA, indent=2)
     phases_str = "\n".join(f"  {p}" for p in _METHODOLOGY_PHASES)
+    
+    # Add validation context if provided
+    validation_note = ""
+    if validation:
+        validation_note = f"""
+═══════════════════════════════════════════════════════════════
+  SCAN VALIDATION RESULTS — READ THIS FIRST
+═══════════════════════════════════════════════════════════════
+
+IMPORTANT: Review these validation results before generating findings:
+
+Open Ports Found: {validation.get('open_ports', [])}
+Filtered Ports: {validation.get('filtered_ports', [])}
+Successful Tools: {validation.get('successful_tools', [])}
+Failed Tools: {validation.get('failed_tools', [])}
+
+Has Open Ports: {validation.get('has_open_ports', False)}
+Has Successful Web Scans: {validation.get('has_successful_web_scans', False)}
+Has SQL Injection Tests: {validation.get('has_sql_injection_tests', False)}
+Has Header Analysis: {validation.get('has_header_analysis', False)}
+
+CRITICAL INSTRUCTIONS BASED ON VALIDATION:
+- If has_open_ports is False, DO NOT report any open port vulnerabilities
+- If has_successful_web_scans is False, DO NOT report web vulnerabilities
+- If has_sql_injection_tests is False, DO NOT report SQL injection findings
+- If has_header_analysis is False, DO NOT report missing header findings
+- Only report findings for tools in the "Successful Tools" list
+- For tools in "Failed Tools", mention the failure in limitations section
+
+If ALL scans failed (all tools in Failed Tools list):
+  → findings[] MUST be empty []
+  → overall_risk MUST be "LOW"
+  → Explain in limitations that target is heavily firewalled/protected
+
+"""
 
     prompt = f"""{_SYSTEM_PROMPT}
-
+{validation_note}
 ═══════════════════════════════════════════════════════════════
   REPORT GENERATION REQUEST
   Tester : {tester}

@@ -188,9 +188,15 @@ def _fmt(result: dict, title: str) -> str:
 
 
 def _run_tool(kali: "KaliClient", endpoint: str, data: dict, title: str,
-              save_as: str, save_target: str) -> str:
+              save_as: str, save_target: str, wait: bool = False, 
+              max_wait: int = 60) -> str:
     """
-    Submit async job ? poll until done ? format result.
+    Submit async job. If wait=True, poll for max_wait seconds, else return immediately.
+    
+    Args:
+        wait: If True, wait for job completion (up to max_wait seconds)
+        max_wait: Maximum seconds to wait before returning (default 60s)
+    
     Returns formatted string for Claude.
     """
     sep = "=" * 70
@@ -209,13 +215,53 @@ def _run_tool(kali: "KaliClient", endpoint: str, data: dict, title: str,
         if fp: out += f"\nSaved: {fp}\n"
         return out
 
-    # Poll
-    result = kali.wait_for_job(job_id)
-    fp = _save(save_as, save_target, result)
-    out = _fmt(result, title)
-    out += f"\nJob ID: {job_id}\n"
-    if fp: out += f"Saved: {fp}\n"
-    return out
+    # Return immediately for async mode (default)
+    if not wait:
+        out = f"\n{sep}\n{title}\n{sep}\n"
+        out += f"✓ Job started successfully\n"
+        out += f"Job ID: {job_id}\n"
+        out += f"Tool: {save_as}\n"
+        out += f"Target: {save_target}\n\n"
+        out += f"The scan is running on Kali server in the background.\n"
+        out += f"Check status with: get_job_status('{job_id}')\n"
+        out += f"Pull results later with: pull_scan_results()\n"
+        out += f"{sep}\n"
+        return out
+    
+    # Wait mode: poll with timeout
+    start_time = time.time()
+    poll_interval = 5
+    
+    while True:
+        elapsed = time.time() - start_time
+        if elapsed > max_wait:
+            out = f"\n{sep}\n{title}\n{sep}\n"
+            out += f"⏱ Scan still running after {max_wait}s (this is normal for heavy scans)\n"
+            out += f"Job ID: {job_id}\n\n"
+            out += f"The scan continues on Kali server.\n"
+            out += f"Check status: get_job_status('{job_id}')\n"
+            out += f"Pull results: pull_scan_results()\n"
+            out += f"{sep}\n"
+            return out
+        
+        result = kali.get(f"api/jobs/{job_id}", timeout=10)
+        if result.get("error"):
+            return f"\n{sep}\n{title}\n{sep}\nERROR checking status: {result['error']}\n"
+        
+        status = result.get("status", "")
+        if status in ("done", "failed"):
+            # Job completed
+            fp = _save(save_as, save_target, result)
+            out = _fmt(result, title)
+            out += f"\nJob ID: {job_id}\n"
+            if fp: out += f"Saved: {fp}\n"
+            return out
+        
+        # Still running, wait and check again
+        time.sleep(poll_interval)
+    
+    # Should never reach here
+    return f"\n{sep}\n{title}\n{sep}\nUnexpected error in polling\n"
 
 
 def _load_results() -> List[dict]:
@@ -250,139 +296,170 @@ def build_mcp(kali: KaliClient) -> FastMCP:
     # -- Pentest tools ---------------------------------------------------------
 
     @mcp.tool(name="nmap_scan")
-    def nmap_scan(target: str, scan_type: str = "-sCV", ports: str = "",
-                  additional_args: str = "") -> str:
-        """Nmap port scan + service/version detection."""
+    def nmap_scan(target: str, scan_type: str = "-sV", ports: str = "",
+                  additional_args: str = "", wait: bool = True) -> str:
+        """Nmap FAST scan - service detection only, no deep probing.
+        Set wait=False for async mode (returns immediately)."""
+        # Fast scan: -sV (version detection), -T4 (fast timing), --version-intensity 2 (minimal probing)
+        if not additional_args:
+            additional_args = "-T4 -Pn --version-intensity 2 --max-retries 1"
         return _run_tool(kali, "api/tools/nmap",
             {"target": target, "scan_type": scan_type, "ports": ports, "additional_args": additional_args},
-            f"Nmap: {target}", "nmap", target)
+            f"Nmap: {target}", "nmap", target, wait=wait, max_wait=120)
 
     @mcp.tool(name="masscan_scan")
-    def masscan_scan(target: str, ports: str = "1-65535", rate: int = 1000, additional_args: str = "") -> str:
-        """Masscan fast port scanner."""
+    def masscan_scan(target: str, ports: str = "1-65535", rate: int = 1000, 
+                     additional_args: str = "", wait: bool = False) -> str:
+        """Masscan fast port scanner. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/masscan",
             {"target": target, "ports": ports, "rate": rate, "additional_args": additional_args},
-            f"Masscan: {target}", "masscan", target)
+            f"Masscan: {target}", "masscan", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="nikto_scan")
-    def nikto_scan(target: str, additional_args: str = "") -> str:
-        """Nikto web server vulnerability scanner."""
+    def nikto_scan(target: str, additional_args: str = "", wait: bool = False) -> str:
+        """Nikto FAST scan - vulnerability detection only, no exploitation.
+        Returns immediately by default (async). Uses -Tuning x to skip slow tests."""
+        if not additional_args:
+            additional_args = "-Tuning x 6 -maxtime 5m"  # Skip slow tests, 5 min max
         return _run_tool(kali, "api/tools/nikto",
             {"target": target, "additional_args": additional_args},
-            f"Nikto: {target}", "nikto", target)
+            f"Nikto: {target}", "nikto", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="whatweb_scan")
-    def whatweb_scan(target: str, aggression: int = 1, additional_args: str = "") -> str:
-        """WhatWeb technology fingerprinting."""
+    def whatweb_scan(target: str, aggression: int = 1, additional_args: str = "", 
+                     wait: bool = True) -> str:
+        """WhatWeb technology fingerprinting. Fast scan, waits for completion by default."""
         return _run_tool(kali, "api/tools/whatweb",
             {"target": target, "aggression": aggression, "additional_args": additional_args},
-            f"WhatWeb: {target}", "whatweb", target)
+            f"WhatWeb: {target}", "whatweb", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="gobuster_scan")
-    def gobuster_scan(url: str, mode: str = "dir", wordlist: str = "/usr/share/wordlists/dirb/common.txt", additional_args: str = "") -> str:
-        """Gobuster directory/DNS/vhost enumeration."""
+    def gobuster_scan(url: str, mode: str = "dir", wordlist: str = "/usr/share/wordlists/dirb/common.txt", 
+                      additional_args: str = "", wait: bool = False) -> str:
+        """Gobuster FAST scan - directory discovery only, small wordlist.
+        Returns immediately by default (async). Uses common.txt (4600 words) for speed."""
+        if not additional_args:
+            additional_args = "-t 50 --no-error -q"  # 50 threads, quiet mode
         return _run_tool(kali, "api/tools/gobuster",
             {"url": url, "mode": mode, "wordlist": wordlist, "additional_args": additional_args},
-            f"Gobuster: {url}", "gobuster", url)
+            f"Gobuster: {url}", "gobuster", url, wait=wait, max_wait=60)
 
     @mcp.tool(name="ffuf_scan")
-    def ffuf_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", mode: str = "dir", max_results: int = 100, additional_args: str = "") -> str:
-        """FFUF web fuzzer."""
+    def ffuf_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", mode: str = "dir", 
+                  max_results: int = 100, additional_args: str = "", wait: bool = False) -> str:
+        """FFUF FAST scan - web fuzzing with small wordlist, detection only.
+        Returns immediately by default (async). Limited to 100 results for speed."""
+        if not additional_args:
+            additional_args = "-t 100 -rate 200 -timeout 3"  # 100 threads, 200 req/s, 3s timeout
         return _run_tool(kali, "api/tools/ffuf",
             {"url": url, "wordlist": wordlist, "mode": mode, "max_results": max_results, "additional_args": additional_args},
-            f"FFUF: {url}", "ffuf", url)
+            f"FFUF: {url}", "ffuf", url, wait=wait, max_wait=60)
 
     @mcp.tool(name="feroxbuster_scan")
-    def feroxbuster_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", threads: int = 50, max_results: int = 200, additional_args: str = "") -> str:
-        """Feroxbuster recursive web content scanner."""
+    def feroxbuster_scan(url: str, wordlist: str = "/usr/share/wordlists/dirb/common.txt", 
+                         threads: int = 50, max_results: int = 200, additional_args: str = "", 
+                         wait: bool = False) -> str:
+        """Feroxbuster recursive web content scanner. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/feroxbuster",
             {"url": url, "wordlist": wordlist, "threads": threads, "max_results": max_results, "additional_args": additional_args},
-            f"Feroxbuster: {url}", "feroxbuster", url)
+            f"Feroxbuster: {url}", "feroxbuster", url, wait=wait, max_wait=60)
 
     @mcp.tool(name="sqlmap_scan")
-    def sqlmap_scan(url: str, data: str = "", additional_args: str = "") -> str:
-        """SQLmap SQL injection scanner."""
+    def sqlmap_scan(url: str, data: str = "", additional_args: str = "", wait: bool = False) -> str:
+        """SQLmap FAST scan - detection only, no exploitation.
+        Returns immediately by default (async). Uses --level=1 --risk=1 for speed."""
+        if not additional_args:
+            additional_args = "--level=1 --risk=1 --threads=5 --technique=B --time-sec=2"
         return _run_tool(kali, "api/tools/sqlmap",
             {"url": url, "data": data, "additional_args": additional_args},
-            f"SQLmap: {url}", "sqlmap", url)
+            f"SQLmap: {url}", "sqlmap", url, wait=wait, max_wait=60)
 
     @mcp.tool(name="nuclei_scan")
-    def nuclei_scan(target: str, templates: str = "", severity: str = "critical,high,medium", additional_args: str = "") -> str:
-        """Nuclei CVE template-based vulnerability scanner."""
+    def nuclei_scan(target: str, templates: str = "", severity: str = "critical,high,medium", 
+                    additional_args: str = "", wait: bool = False) -> str:
+        """Nuclei FAST scan - CVE detection only, no exploitation.
+        Returns immediately by default (async). Uses -rl 150 for rate limiting."""
+        if not additional_args:
+            additional_args = "-c 100 -rl 150 -timeout 5"  # 100 concurrent, rate limit 150/s, 5s timeout
         return _run_tool(kali, "api/tools/nuclei",
             {"target": target, "templates": templates, "severity": severity, "additional_args": additional_args},
-            f"Nuclei: {target}", "nuclei", target)
+            f"Nuclei: {target}", "nuclei", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="hydra_attack")
-    def hydra_attack(target: str, service: str, username: str = "", username_file: str = "", password: str = "", password_file: str = "", additional_args: str = "") -> str:
-        """Hydra brute-force credential testing."""
+    def hydra_attack(target: str, service: str, username: str = "", username_file: str = "", 
+                     password: str = "", password_file: str = "", additional_args: str = "", 
+                     wait: bool = False) -> str:
+        """Hydra brute-force credential testing. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/hydra",
             {"target": target, "service": service, "username": username, "username_file": username_file,
              "password": password, "password_file": password_file, "additional_args": additional_args},
-            f"Hydra: {target} [{service}]", "hydra", f"{target}_{service}")
+            f"Hydra: {target} [{service}]", "hydra", f"{target}_{service}", wait=wait, max_wait=60)
 
     @mcp.tool(name="wpscan_analyze")
-    def wpscan_analyze(url: str, additional_args: str = "") -> str:
-        """WPScan WordPress vulnerability scanner."""
+    def wpscan_analyze(url: str, additional_args: str = "", wait: bool = False) -> str:
+        """WPScan WordPress vulnerability scanner. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/wpscan",
             {"url": url, "additional_args": additional_args},
-            f"WPScan: {url}", "wpscan", url)
+            f"WPScan: {url}", "wpscan", url, wait=wait, max_wait=60)
 
     @mcp.tool(name="metasploit_run")
-    def metasploit_run(module: str, options: Dict[str, Any] = {}) -> str:
-        """Run a Metasploit module."""
+    def metasploit_run(module: str, options: Dict[str, Any] = {}, wait: bool = False) -> str:
+        """Run a Metasploit module. Returns immediately by default (async)."""
         target = options.get("RHOSTS", options.get("RHOST", module.split("/")[-1]))
         return _run_tool(kali, "api/tools/metasploit",
             {"module": module, "options": options},
-            f"Metasploit: {module}", "metasploit", target)
+            f"Metasploit: {module}", "metasploit", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="searchsploit_search")
-    def searchsploit_search(query: str, additional_args: str = "") -> str:
-        """Search Exploit-DB for exploits."""
+    def searchsploit_search(query: str, additional_args: str = "", wait: bool = True) -> str:
+        """Search Exploit-DB for exploits. Fast search, waits for completion by default."""
         return _run_tool(kali, "api/tools/searchsploit",
             {"query": query, "additional_args": additional_args},
-            f"Searchsploit: {query}", "searchsploit", query)
+            f"Searchsploit: {query}", "searchsploit", query, wait=wait, max_wait=30)
 
     @mcp.tool(name="subfinder_scan")
-    def subfinder_scan(domain: str, additional_args: str = "-silent") -> str:
-        """Subfinder passive subdomain discovery."""
+    def subfinder_scan(domain: str, additional_args: str = "-silent", wait: bool = True) -> str:
+        """Subfinder passive subdomain discovery. Fast scan, waits for completion by default."""
         return _run_tool(kali, "api/tools/subfinder",
             {"domain": domain, "additional_args": additional_args},
-            f"Subfinder: {domain}", "subfinder", domain)
+            f"Subfinder: {domain}", "subfinder", domain, wait=wait, max_wait=60)
 
     @mcp.tool(name="amass_scan")
-    def amass_scan(domain: str, mode: str = "enum", additional_args: str = "") -> str:
-        """Amass subdomain enumeration."""
+    def amass_scan(domain: str, mode: str = "enum", additional_args: str = "", wait: bool = False) -> str:
+        """Amass subdomain enumeration. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/amass",
             {"domain": domain, "mode": mode, "additional_args": additional_args},
-            f"Amass: {domain}", "amass", domain)
+            f"Amass: {domain}", "amass", domain, wait=wait, max_wait=60)
 
     @mcp.tool(name="enum4linux_ng_scan")
-    def enum4linux_ng_scan(target: str, additional_args: str = "-A") -> str:
-        """Enum4linux-ng Windows/Samba enumeration."""
+    def enum4linux_ng_scan(target: str, additional_args: str = "-A", wait: bool = True) -> str:
+        """Enum4linux-ng Windows/Samba enumeration. Waits up to 60s by default."""
         return _run_tool(kali, "api/tools/enum4linux-ng",
             {"target": target, "additional_args": additional_args},
-            f"Enum4linux-ng: {target}", "enum4linux-ng", target)
+            f"Enum4linux-ng: {target}", "enum4linux-ng", target, wait=wait, max_wait=60)
 
     @mcp.tool(name="john_crack")
-    def john_crack(hash_file: str, wordlist: str = "/usr/share/wordlists/rockyou.txt", format_type: str = "", additional_args: str = "") -> str:
-        """John the Ripper password cracker."""
+    def john_crack(hash_file: str, wordlist: str = "/usr/share/wordlists/rockyou.txt", 
+                   format_type: str = "", additional_args: str = "", wait: bool = False) -> str:
+        """John the Ripper password cracker. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/john",
             {"hash_file": hash_file, "wordlist": wordlist, "format": format_type, "additional_args": additional_args},
-            f"John: {hash_file}", "john", hash_file.split("/")[-1])
+            f"John: {hash_file}", "john", hash_file.split("/")[-1], wait=wait, max_wait=60)
 
     @mcp.tool(name="hashcat_crack")
-    def hashcat_crack(hash_file: str, wordlist: str = "/usr/share/wordlists/rockyou.txt", hash_type: str = "", attack_mode: int = 0, additional_args: str = "") -> str:
-        """Hashcat GPU/CPU password cracker."""
+    def hashcat_crack(hash_file: str, wordlist: str = "/usr/share/wordlists/rockyou.txt", 
+                      hash_type: str = "", attack_mode: int = 0, additional_args: str = "", 
+                      wait: bool = False) -> str:
+        """Hashcat GPU/CPU password cracker. Returns immediately by default (async)."""
         return _run_tool(kali, "api/tools/hashcat",
             {"hash_file": hash_file, "wordlist": wordlist, "hash_type": hash_type, "attack_mode": attack_mode, "additional_args": additional_args},
-            f"Hashcat: {hash_file}", "hashcat", hash_file.split("/")[-1])
+            f"Hashcat: {hash_file}", "hashcat", hash_file.split("/")[-1], wait=wait, max_wait=60)
 
     @mcp.tool(name="execute_command")
-    def execute_command(command: str) -> str:
-        """Execute an arbitrary command on the Kali server."""
+    def execute_command(command: str, wait: bool = True) -> str:
+        """Execute an arbitrary command on the Kali server. Waits up to 60s by default."""
         return _run_tool(kali, "api/command", {"command": command},
-            f"Command: {command}", "command", command[:30])
+            f"Command: {command}", "command", command[:30], wait=wait, max_wait=60)
 
     @mcp.tool(name="server_health")
     def server_health() -> str:
